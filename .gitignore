@@ -1,0 +1,7 @@
+bin/
+.DS_Store
+target/
+.sbtserver*
+*.log
+libexec/
+.idea/
