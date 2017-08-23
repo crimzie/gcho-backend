@@ -1,102 +1,89 @@
 package controllers
 
-import java.io.File
-
+import akka.util.ByteString
 import com.google.inject.Inject
 import com.sksamuel.scrimage.Image
-import daos.CharlistDao
+import com.sksamuel.scrimage.nio.PngWriter
+import daos.{CharlistDao, PicDao}
 import models.charlist.Charlist._
 import models.charlist._
-import org.mongodb.scala.Completed
-import org.mongodb.scala.result.UpdateResult
 import play.api.Configuration
+import play.api.http.HttpEntity
 import play.api.libs.Files.TemporaryFile
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc._
-import scala.concurrent.Future
-import scala.util.Random
 
-/**
-  * Created by crimson on 9/23/16.
-  */
-class CharlistController @Inject()(charlistDao: CharlistDao, configuration: Configuration) extends Controller {
-  private val invalidMsg = { e: JsError =>
-    Future(BadRequest(Json toJson (e.errors map { case (a, b) => Json obj a.toString -> b.mkString("; ") })))
-  }
-  private val throwMsg: PartialFunction[Throwable, Future[Result]] = {
-    case e: IllegalStateException => Future(NotFound(Json obj "Empty database return." -> e.toString))
-    case t: Throwable => Future(InternalServerError(t.toString))
-  }
-  private val picFile = { id: String => new File(s"${configuration.underlying getString "files.picfolder"}$id.png") }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 
-  def options(p: String, id: String): Action[AnyContent] = Action { implicit request =>
-    val methods = p match {
-      case "base" => "GET"
-      case "list" => "GET, POST"
-      case "elem" => "GET, PUT, PATCH, DELETE"
-      case "file" => "GET, PUT"
-    }
-    Ok withHeaders(
-      ALLOW -> methods,
-      ACCESS_CONTROL_ALLOW_METHODS -> methods,
-      ACCESS_CONTROL_ALLOW_HEADERS -> (request.headers get ACCESS_CONTROL_REQUEST_HEADERS getOrElse ""))
-  }
+class CharlistController @Inject()(charlistDao: CharlistDao, picDao: PicDao, configuration: Configuration)
+                                  (implicit ec: ExecutionContext) extends InjectedController {
+  implicit val pw: PngWriter = PngWriter.MinCompression
 
-  def add(): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    request.body.validate[Charlist] match {
-      case e: JsError => invalidMsg(e)
-      case s: JsSuccess[Charlist] =>
-        val charlist = s.get copy(
-          _id = math abs Random.nextLong toString(),
-          timestamp = System.currentTimeMillis toString())
-        charlistDao save charlist map { _ => Accepted(Json toJson charlist) } recoverWith throwMsg
-    }
+  def add(): Action[Charlist] = Action.async(parse.json[Charlist]) { implicit request =>
+    charlistDao save request.body map { _ => Accepted(Json toJson request.body) }
   }
 
   def list: Action[AnyContent] = Action.async {
-    charlistDao find() map { list: Seq[JsObject] => Ok(Json toJson list) } recoverWith throwMsg
+    charlistDao all "" map {
+      Ok apply Json.toJson(_)
+    }
   }
 
   def get(id: String): Action[AnyContent] = Action.async {
-    charlistDao find id map { charlist: JsValue => Ok(charlist) } recoverWith throwMsg
-  }
-
-  def create(p: String): Action[AnyContent] = Action async Future(Created(Json toJson Charlist()))
-
-  def update(id: String, replace: Boolean): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    def save(ch: JsValue): Future[Result] = ch.validate[Charlist] match {
-      case e: JsError => invalidMsg(e)
-      case s: JsSuccess[Charlist] =>
-        val charlist = s.get copy (_id = id)
-        charlistDao update charlist map { _ => Accepted(Json toJson charlist) } recoverWith throwMsg
+    charlistDao find("", id) map {
+      case Some(cl) => Ok(Json toJson cl)
+      case None => NotFound
     }
-    val b = request.body
-    if (replace) save(b)
-    else charlistDao find id flatMap { j => save(j.as[JsObject] deepMerge b.as[JsObject]) } recoverWith throwMsg
   }
 
-  def delete(id: String): Action[AnyContent] = Action.async {
-    picFile(id) delete()
-    charlistDao delete id map { list => Ok(Json toJson list) } recoverWith throwMsg
+  def create(p: String): Action[AnyContent] = Action async {
+    val cl = Charlist()
+    charlistDao save cl map { _ => Created(Json toJson cl) }
   }
 
-  def storePic(id: String): Action[MultipartFormData[TemporaryFile]] = Action.async(parse.multipartFormData) {
-    implicit request =>
-      charlistDao exists id map {
-        if (_) request.body file "pic" map { p =>
-          val pf = picFile(id)
-          if (pf.exists) pf delete()
-          Image fromFile p.ref.file cover(120, 150) output pf
-        } match {
-          case _: Some[File] => Accepted("Pic uploaded.")
-          case None => BadRequest("Missing file.")
-        } else NotFound("Charlist doesn't exist.")
-      } recoverWith throwMsg
+  def replace(): Action[Charlist] = Action.async(parse.json[Charlist]) { implicit request =>
+    val cl = request.body.copy(player = "")
+    charlistDao update cl map { _ => Accepted(Json toJson cl) }
   }
 
-  def getPic(id: String): Action[AnyContent] = Action {
-    val pf = picFile(id)
-    Ok sendFile(if (pf.exists) pf else new File(configuration.underlying getString "files.defaultpic"), inline = true)
+  def update(id: String): Action[JsValue] = Action.async(parse.json) { implicit request =>
+    for {
+      j <- charlistDao find("", id)
+      r <- j.asInstanceOf[JsObject].deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
+        case JsSuccess(cl, _) => charlistDao save cl.copy(_id = id, player = "") map (_ => Accepted)
+        case JsError(ers) => Future successful BadRequest((JsObject.empty /: ers) {
+          case (jo, (jp, seq)) => jo deepMerge jp.write[JsArray].writes(JsArray apply seq.map(Json toJson _.message))
+        })
+      }
+    } yield r
   }
+
+  def delete(id: String): Action[AnyContent] = Action.async(for {
+    b <- charlistDao exists("", id)
+    r <- if (b) for {
+      _ <- charlistDao delete("", id)
+      _ <- picDao delete id
+    } yield Ok else Future successful NotFound
+  } yield r)
+
+  def storePic(id: String): Action[MultipartFormData[TemporaryFile]] =
+    Action.async(parse.multipartFormData) { implicit request =>
+      request.body file "pic" match {
+        case None => Future successful BadRequest("Missing file.")
+        case Some(p) => for {
+          b <- charlistDao exists("", id)
+          r <- if (b) picDao save(id, Image fromPath p.ref.path cover(120, 150) bytes) map (_ => Accepted)
+          else Future successful NotFound("Charlist doesn't exist.")
+        } yield r
+      }
+    }
+
+  def getPic(id: String): Action[AnyContent] = Action.async(for {
+    b <- charlistDao exists("", id)
+    r <- if (b) picDao load id map {
+      case None => NotFound
+      case Some(a) => Ok sendEntity HttpEntity.Strict(ByteString(a), Some("image/png"))
+    } else Future successful NotFound("Charlist doesn't exist.")
+  } yield r)
 }

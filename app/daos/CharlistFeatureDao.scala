@@ -1,62 +1,82 @@
 package daos
 
-import akka.actor.FSM.->
 import com.google.inject.{ImplementedBy, Inject, Singleton}
-//import models.charlist.Charlist._
+import models.charlist.FlaggedFeature._
 import models.charlist._
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.json.{JsObject, Json}
+import play.api.Logger
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json.{arr, obj}
 import play.modules.reactivemongo.ReactiveMongoApi
-//import play.modules.reactivemongo.json._
+import play.modules.reactivemongo.json._
+import reactivemongo.api.Cursor
+import reactivemongo.api.indexes.Index
+import reactivemongo.api.indexes.IndexType.{Ascending, Text}
 import reactivemongo.play.json.collection.JSONCollection
+import services.defaults._
 
-import scala.concurrent.Future
+import scala.concurrent.duration.{Duration, MINUTES}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
 @ImplementedBy(classOf[MongoCharlistFeatureDao])
 trait CharlistFeatureDao {
-  def save[F <: FlaggedFeature](feature: F): Future[Unit]
+  def save(feature: FlaggedFeature[_, _]): Future[Unit]
 
-  def find[F <: FlaggedFeature](id: String): Future[F]
+  def remove(user: String, id: String): Future[Unit]
 
-  def find[F <: FlaggedFeature](cat: Seq[String], term: String = ""): Future[Seq[F]]
+  def find(user: String, id: String): Future[Option[JsObject]]
+
+  def find(user: String, cat: Set[String], term: Option[String] = None): Future[Seq[JsObject]]
 }
 
 @Singleton
-class MongoCharlistFeatureDao @Inject()(mongo: ReactiveMongoApi) extends CharlistFeatureDao {
+class MongoCharlistFeatureDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext)
+  extends CharlistFeatureDao {
+  val logger: Logger = Logger(classOf[MongoCharlistFeatureDao])
   val storage: Future[JSONCollection] = mongo.database map (_ collection[JSONCollection] "features")
-  private val strMap = Map(
-    TRAITS -> "name",
-    SKILLS -> "skillString",
-    TECHNIQUES -> "tchString",
-    WEAPONS -> "name",
-    ARMORS -> "name",
-    ITEMS -> "name")
+  storage map (_.indexesManager ensure Index(USER -> Ascending :: Nil, name = Some(s"bin-$USER-1")))
+  storage map (_.indexesManager ensure Index(CAT -> Ascending :: Nil, name = Some(s"bin-$CAT-1")))
+  storage map (_.indexesManager ensure Index(NAME -> Text :: Nil, name = Some(s"txt-$NAME")))
 
-  def save[F <: FlaggedFeature](feature: F): Future[Unit] = for {
+  private val defaultsPreloading: Future[Unit] = for {
+    s <- storage
+    _ <- s remove obj(USER -> DEF_USER_VAL)
+    stream = DefaultTraits.parse("defaults/adv.xml") ++ DefaultSkills.parse("defaults/skl.xml") ++
+      DefaultTechniques.parse("defaults/skl.xml") ++ DefaultArmor.parse("defaults/eqp.xml") ++
+      DefaultWeapons.parse("defaults/eqp.xml") ++ DefaultItems.parse("defaults/eqp.xml")
+    _ <- s bulkInsert(stream, ordered = false)
+  } yield ()
+  defaultsPreloading onComplete {
+    case Success(_) => logger info "Default features collection loaded to db."
+    case Failure(_) => logger warn "Failed to load default features collection to db."
+  }
+  Await.result(defaultsPreloading, Duration(3, MINUTES))
+
+  override def save(feature: FlaggedFeature[_, _]): Future[Unit] = for {
     collection <- storage
-    _ <- collection insert feature
+    _ <- collection.update(obj(USER -> feature.user, ID -> feature._id), feature, upsert = true)
   } yield ()
 
-  def find[F <: FlaggedFeature](id: String): Future[Option[F]] = for {
+  override def remove(user: String, id: String): Future[Unit] = for {
     collection <- storage
-    feature <- collection.find(Json obj "_id" -> id).one[F]
+    _ <- collection remove obj(USER -> user, ID -> id)
+  } yield ()
+
+  override def find(user: String, id: String): Future[Option[JsObject]] = for {
+    collection <- storage
+    feature <- collection.find(obj(USER -> obj("$in" -> arr(user, DEF_USER_VAL)), ID -> id)).one[JsObject]
   } yield feature
 
-  private val docIdToJson: (String, ) => JsObject = (col, doc) =>
-    (Json obj "id" -> (doc get "_id").get.asObjectId.getValue.toString) ++
-      (Json obj "name" -> (doc get "data").get.asDocument.get(strMap apply col).asString.getValue)
-
-  def find[F <: FlaggedFeature](cat: Seq[String], term: String = ""): Future[Seq[F]] = for {
+  override def find(user: String, cat: Set[String], term: Option[String] = None): Future[Seq[JsObject]] = for {
     collection <- storage
-    collection.find(Json obj "data.category" -> (Json obj "$in" -> cat)).projection()
-  }
-
-  {
-    val c = collMap(col)
-    (if (cat != Nil) c find.in("data.category", cat: _*)
-    else c find()
-    ) withFilter {
-      _.get("data").get.asDocument.get(strMap(col)).asString.getValue.toLowerCase.contains(term.toLowerCase)
-    } map (docIdToJson(col, _)) toFuture()
-  } // TODO: regex search
+    fs <- collection
+      .find(obj(
+        USER -> obj("$in" -> arr(user, DEF_USER_VAL)),
+        CAT -> obj("$in" -> cat),
+        "$text" -> obj("$search" -> term)))
+      .projection(obj(DATA -> 0, USER -> 0))
+      .cursor[JsObject]()
+      .collect(-1, Cursor.FailOnError[Seq[JsObject]]())
+  } yield fs
 }
