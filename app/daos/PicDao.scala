@@ -20,16 +20,16 @@ trait PicDao {
 @Singleton
 class MongoPicDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) extends PicDao {
   private val storage: Future[BSONCollection] = mongo.database map (_ collection[BSONCollection] "pics")
-  private val byId: String => BSONDocument = id => BSONDocument("_id" -> id)
+  private val d = BSONDocument.empty
 
   override def save(id: String, pic: Array[Byte]): Future[Unit] = for {
     c <- storage
-    _ <- c update(byId(id), BSONDocument("_id" -> id, "pic" -> pic), upsert = true)
+    _ <- c update(d :~ "_id" -> id, d :~ "_id" -> id :~ "pic" -> pic, upsert = true)
   } yield ()
 
   override def load(id: String): Future[Option[Array[Byte]]] = for {
     c <- storage
-    optD <- c.find(byId(id)).one[BSONDocument]
+    optD <- c.find(d :~ "_id" -> id).one[BSONDocument]
   } yield for {
     d <- optD
     a <- d.getAs[Array[Byte]]("pic")
@@ -37,6 +37,6 @@ class MongoPicDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionConte
 
   override def delete(id: String): Future[Unit] = for {
     c <- storage
-    _ <- c remove byId(id)
+    _ <- c remove d :~ "_id" -> id
   } yield ()
 }
