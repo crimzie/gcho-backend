@@ -3,7 +3,6 @@ package daos
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 import models.charlist.Charlist
 import models.charlist.Charlist._
-import play.api.libs.json.Json
 import play.api.libs.json.Json.obj
 import play.modules.reactivemongo.ReactiveMongoApi
 import play.modules.reactivemongo.json._
@@ -24,8 +23,6 @@ trait CharlistDao {
 
   def exists(user: String, id: String): Future[Boolean]
 
-  def update(charlist: Charlist): Future[Unit]
-
   def delete(user: String, id: String): Future[Unit]
 }
 
@@ -36,7 +33,7 @@ class MongoCharlistDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: Execution
 
   override def save(charlist: Charlist): Future[Unit] = for {
     collection <- storage
-    _ <- collection insert charlist
+    _ <- collection update(obj(ID -> charlist._id, PLAYER -> charlist.player), charlist, upsert = true)
   } yield ()
 
   override def all(user: String): Future[Seq[Charlist]] = for {
@@ -56,11 +53,6 @@ class MongoCharlistDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: Execution
     collection <- storage
     result <- collection count Some(obj(ID -> id, PLAYER -> user))
   } yield result > 0
-
-  override def update(charlist: Charlist): Future[Unit] = for {
-    collection <- storage
-    _ <- collection update(obj(ID -> charlist._id, PLAYER -> charlist.player), charlist, upsert = true)
-  } yield ()
 
   override def delete(user: String, id: String): Future[Unit] = for {
     collection <- storage

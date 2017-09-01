@@ -2,7 +2,6 @@ package daos
 
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.collections.bson.BSONCollection
 import reactivemongo.bson._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -18,25 +17,27 @@ trait PicDao {
 }
 
 @Singleton
-class MongoPicDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) extends PicDao {
-  private val storage: Future[BSONCollection] = mongo.database map (_ collection[BSONCollection] "pics")
-  private val d = BSONDocument.empty
+class MongoPicDao @Inject()(override val mongo: ReactiveMongoApi)(implicit val ec: ExecutionContext)
+  extends PicDao with BSONMongoDao {
+  override val colName: String = "pics"
+  val PIC = "pic"
+  val ID = "_id"
 
   override def save(id: String, pic: Array[Byte]): Future[Unit] = for {
     c <- storage
-    _ <- c update(d :~ "_id" -> id, d :~ "_id" -> id :~ "pic" -> pic, upsert = true)
+    _ <- c update(d :~ ID -> id, d :~ ID -> id :~ PIC -> pic, upsert = true)
   } yield ()
 
   override def load(id: String): Future[Option[Array[Byte]]] = for {
     c <- storage
-    optD <- c.find(d :~ "_id" -> id).one[BSONDocument]
+    optD <- c.find(d :~ ID -> id).one[BSONDocument]
   } yield for {
     d <- optD
-    a <- d.getAs[Array[Byte]]("pic")
+    a <- d.getAs[Array[Byte]](PIC)
   } yield a
 
   override def delete(id: String): Future[Unit] = for {
     c <- storage
-    _ <- c remove d :~ "_id" -> id
+    _ <- c remove d :~ ID -> id
   } yield ()
 }

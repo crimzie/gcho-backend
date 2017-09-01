@@ -2,9 +2,11 @@ package controllers
 
 import akka.util.ByteString
 import com.google.inject.Inject
+import com.mohiva.play.silhouette.api.Silhouette
 import com.sksamuel.scrimage.Image
 import com.sksamuel.scrimage.nio.PngWriter
 import daos.{CharlistDao, PicDao}
+import models.auth.JWTEnv
 import models.charlist.Charlist._
 import models.charlist._
 import play.api.Configuration
@@ -16,74 +18,77 @@ import play.api.mvc._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class CharlistController @Inject()(charlistDao: CharlistDao, picDao: PicDao, configuration: Configuration)
+class CharlistController @Inject()(
+                                    silhouette: Silhouette[JWTEnv],
+                                    charlistDao: CharlistDao,
+                                    picDao: PicDao,
+                                    configuration: Configuration)
                                   (implicit ec: ExecutionContext) extends InjectedController {
   implicit val pw: PngWriter = PngWriter.MinCompression
 
-  def add(): Action[Charlist] = Action.async(parse.json[Charlist]) { implicit request =>
-    charlistDao save request.body map { _ => Accepted(Json toJson request.body) }
+  def add(): Action[Charlist] = (silhouette.SecuredAction async parse.json[Charlist]) { request =>
+    val cl = request.body.copy(player = request.identity._id)
+    charlistDao save cl map { _ => Accepted(Json toJson cl) }
   }
 
-  def list: Action[AnyContent] = Action.async {
-    charlistDao all "" map {
-      Ok apply Json.toJson(_)
-    }
+  def list(): Action[AnyContent] = silhouette.SecuredAction async { request =>
+    charlistDao.all(request.identity._id).map(Ok apply Json.toJson(_))
   }
 
-  def get(id: String): Action[AnyContent] = Action.async {
-    charlistDao find("", id) map {
+  def get(id: String): Action[AnyContent] = silhouette.SecuredAction async { request =>
+    charlistDao.find(request.identity._id, id) map {
       case Some(cl) => Ok(Json toJson cl)
-      case None => NotFound
+      case _ => NotFound
     }
   }
 
-  def create(p: String): Action[AnyContent] = Action async {
-    val cl = Charlist()
+  def create(p: String): Action[AnyContent] = silhouette.SecuredAction async { request =>
+    val cl = Charlist(player = request.identity._id)
     charlistDao save cl map { _ => Created(Json toJson cl) }
   }
 
-  def replace(): Action[Charlist] = Action.async(parse.json[Charlist]) { implicit request =>
-    val cl = request.body.copy(player = "")
-    charlistDao update cl map { _ => Accepted(Json toJson cl) }
+  def replace(): Action[Charlist] = (silhouette.SecuredAction async parse.json[Charlist]) { request =>
+    val cl = request.body.copy(player = request.identity._id)
+    charlistDao save cl map { _ => Accepted(Json toJson cl) }
   }
 
-  def update(id: String): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    for {
-      j <- charlistDao find("", id)
-      r <- j.asInstanceOf[JsObject].deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
+  def update(id: String): Action[JsValue] = (silhouette.SecuredAction async parse.json) { request =>
+    charlistDao find(request.identity._id, id) flatMap {
+      case Some(j) => Json.toJsObject(j).deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
         case JsSuccess(cl, _) => charlistDao save cl.copy(_id = id, player = "") map (_ => Accepted)
         case JsError(ers) => Future successful BadRequest((JsObject.empty /: ers) {
           case (jo, (jp, seq)) => jo deepMerge jp.write[JsArray].writes(JsArray apply seq.map(Json toJson _.message))
         })
       }
-    } yield r
+      case _ => Future successful NotFound
+    }
   }
 
-  def delete(id: String): Action[AnyContent] = Action.async(for {
-    b <- charlistDao exists("", id)
-    r <- if (b) for {
-      _ <- charlistDao delete("", id)
-      _ <- picDao delete id
-    } yield Ok else Future successful NotFound
-  } yield r)
+  def delete(id: String): Action[AnyContent] = silhouette.SecuredAction async { request =>
+    charlistDao exists(request.identity._id, id) flatMap {
+      if (_) for {
+        _ <- charlistDao delete(request.identity._id, id)
+        _ <- picDao delete id
+      } yield Ok else Future successful NotFound
+    }
+  }
 
   def storePic(id: String): Action[MultipartFormData[TemporaryFile]] =
-    Action.async(parse.multipartFormData) { implicit request =>
-      request.body file "pic" match {
-        case None => Future successful BadRequest("Missing file.")
-        case Some(p) => for {
-          b <- charlistDao exists("", id)
-          r <- if (b) picDao save(id, Image fromPath p.ref.path cover(120, 150) bytes) map (_ => Accepted)
-          else Future successful NotFound("Charlist doesn't exist.")
-        } yield r
+    (silhouette.SecuredAction async parse.multipartFormData) { request =>
+      (request.body file "pic" fold Future.successful[Result](BadRequest)) { p =>
+        charlistDao exists(request.identity._id, id) flatMap {
+          if (_) picDao save(id, Image fromPath p.ref.path cover(120, 150) bytes) map (_ => Accepted)
+          else Future successful NotFound
+        }
       }
     }
 
-  def getPic(id: String): Action[AnyContent] = Action.async(for {
-    b <- charlistDao exists("", id)
-    r <- if (b) picDao load id map {
-      case None => NotFound
-      case Some(a) => Ok sendEntity HttpEntity.Strict(ByteString(a), Some("image/png"))
-    } else Future successful NotFound("Charlist doesn't exist.")
-  } yield r)
+  def getPic(id: String): Action[AnyContent] = silhouette.SecuredAction async { request =>
+    charlistDao exists(request.identity._id, id) flatMap {
+      if (_) picDao load id map {
+        case Some(a) => Ok sendEntity HttpEntity.Strict(ByteString(a), Some("image/png"))
+        case _ => NotFound
+      } else Future successful NotFound
+    }
+  }
 }
