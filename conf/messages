@@ -1,2 +1,6 @@
 error.passwordsDontMatch = Passwords don't match
 error.password.minLength = Password should be at least 6 characters
+mail.welcome.hi=Welcome to Gurps Combat Helper Online!
+mail.welcome.instructions=Please follow the link to confirm your email:
+mail.reset.hi=You are about to reset your password.
+mail.reset.instructions=Please follow the link to confirm it's You who actually initiated password reset procedure.
