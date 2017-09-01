@@ -86,7 +86,7 @@ class AuthController @Inject()(
             User(name = data.name, email = mail, logins = Map(ev))
           for {
             _ <- userDao save user
-            _ <- authInfoRepository add(loginInfo, passwordHasher hash data.password._1)
+            _ <- authInfoRepository save(loginInfo, passwordHasher hash data.password._1)
             token = UserToken(userId = user._id, email = data.email, signUp = true)
             _ <- tokenDao save token
             _ <- mailer welcome(user.name, data.email, s"https://${request.host}/auth/signup/confirm/${token._id}")
@@ -202,9 +202,9 @@ class AuthController @Inject()(
     (changePasswordForm bindFromRequest) fold(
       success = {
         case (oldPasw, newPasw) => for {
-          li <- credentialsProvider authenticate Credentials(CredentialsProvider.ID, oldPasw)
+          li <- credentialsProvider authenticate Credentials(request.authenticator.loginInfo.providerKey, oldPasw)
           _ <- authInfoRepository save(li, passwordHasher hash newPasw)
-        } yield Ok
+        } yield Accepted
       },
       hasErrors = handleFormErrors)
   }
