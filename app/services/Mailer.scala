@@ -1,15 +1,18 @@
 package services
 
+import java.util.Locale
+
 import com.google.inject.Inject
-import play.api.i18n.Messages
+import play.api.i18n.{Lang, Messages, MessagesApi}
 import play.api.libs.mailer._
 import play.api.{Configuration, Logger}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class Mailer @Inject()(configuration: Configuration, client: MailerClient)
-                      (implicit ec: ExecutionContext, messages: Messages) {
+class Mailer @Inject()(configuration: Configuration, client: MailerClient, messagesApi: MessagesApi)
+                      (implicit ec: ExecutionContext) {
+  lazy implicit val messages: Messages = messagesApi preferred Lang(Locale.ENGLISH) :: Nil
   val from: String = configuration get[String] "mail.from"
   val replyTo: Seq[String] = Seq(configuration get[String] "mail.reply")
 

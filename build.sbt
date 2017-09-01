@@ -9,7 +9,10 @@ logLevel := sbt.Level.Info
 lazy val root = project in file(".") enablePlugins PlayScala
 
 libraryDependencies ++= Seq(
+  ehcache,
   filters,
+  guice,
+  ws,
   "com.typesafe.play" %% "play-mailer" % "6.0.0",
   "com.mohiva" %% "play-silhouette" % "5.0.0",
   "com.mohiva" %% "play-silhouette-testkit" % "5.0.0" % "test",

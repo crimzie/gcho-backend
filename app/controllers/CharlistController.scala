@@ -27,7 +27,8 @@ class CharlistController @Inject()(
   implicit val pw: PngWriter = PngWriter.MinCompression
 
   def add(): Action[Charlist] = (silhouette.SecuredAction async parse.json[Charlist]) { request =>
-    val cl = request.body.copy(player = request.identity._id)
+    val cl = if (request.body.player == request.identity._id) request.body
+    else request.body.copy(player = request.identity._id)
     charlistDao save cl map { _ => Accepted(Json toJson cl) }
   }
 
@@ -42,20 +43,21 @@ class CharlistController @Inject()(
     }
   }
 
-  def create(p: String): Action[AnyContent] = silhouette.SecuredAction async { request =>
+  def create(): Action[AnyContent] = silhouette.SecuredAction async { request =>
     val cl = Charlist(player = request.identity._id)
     charlistDao save cl map { _ => Created(Json toJson cl) }
   }
 
-  def replace(): Action[Charlist] = (silhouette.SecuredAction async parse.json[Charlist]) { request =>
-    val cl = request.body.copy(player = request.identity._id)
+  def replace(id: String): Action[Charlist] = (silhouette.SecuredAction async parse.json[Charlist]) { request =>
+    val cl = if (request.body.player == request.identity._id && request.body._id == id) request.body
+    else request.body.copy(_id = id, player = request.identity._id)
     charlistDao save cl map { _ => Accepted(Json toJson cl) }
   }
 
   def update(id: String): Action[JsValue] = (silhouette.SecuredAction async parse.json) { request =>
     charlistDao find(request.identity._id, id) flatMap {
       case Some(j) => Json.toJsObject(j).deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
-        case JsSuccess(cl, _) => charlistDao save cl.copy(_id = id, player = "") map (_ => Accepted)
+        case JsSuccess(cl, _) => charlistDao save cl.copy(_id = id, player = request.identity._id) map (_ => Accepted)
         case JsError(ers) => Future successful BadRequest((JsObject.empty /: ers) {
           case (jo, (jp, seq)) => jo deepMerge jp.write[JsArray].writes(JsArray apply seq.map(Json toJson _.message))
         })

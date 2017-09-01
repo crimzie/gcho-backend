@@ -63,6 +63,7 @@ class AuthController @Inject()(
                                 assets: Assets,
                                 configuration: Configuration,
                                 mailer: Mailer)(implicit ec: ExecutionContext) extends InjectedController {
+  setControllerComponents(components)
 
   import AuthController._
 
@@ -126,17 +127,8 @@ class AuthController @Inject()(
       hasErrors = handleFormErrors)
   }
 
-  def socialDispatch(providerId: String): Action[AnyContent] = Action async { implicit request =>
-    request.queryString get "code" match {
-      case Some(_) => assets at(path = "/public", file = "index.html") apply request
-      case None => (socialProviderRegistry.get[SocialProvider](providerId) fold Future.successful[Result](BadRequest)) {
-        _.authenticate() map (_.left.get)
-      }
-    }
-  }
-
-  def socialAuth(providerId: String): Action[AnyContent] = Action async { implicit request =>
-    (socialProviderRegistry.get[SocialProvider](providerId) fold Future.successful[Result](BadRequest)) { provider =>
+  def social(providerId: String): Action[AnyContent] = Action async { implicit request =>
+    (socialProviderRegistry.get[SocialProvider](providerId) fold Future.successful[Result](NotFound)) { provider =>
       for {
         either <- provider authenticate()
         result <- either.fold[Future[Result]](

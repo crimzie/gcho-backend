@@ -1,7 +1,7 @@
 package daos
 
 import com.github.dwickern.macros.NameOf
-import com.google.inject.{Inject, Singleton}
+import com.google.inject.{ImplementedBy, Inject, Singleton}
 import com.mohiva.play.silhouette.api.LoginInfo
 import com.mohiva.play.silhouette.api.services.IdentityService
 import models.auth.{Auth, Mail, User}
@@ -12,6 +12,7 @@ import reactivemongo.bson.{BSONArray, BSONDocument, BSONDocumentHandler, BSONHan
 
 import scala.concurrent.{ExecutionContext, Future}
 
+@ImplementedBy(classOf[MongoUserDao])
 trait UserDao extends IdentityService[User] {
   def save(user: User): Future[Unit]
 

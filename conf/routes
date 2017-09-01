@@ -1,21 +1,30 @@
 # Routes
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
+# User authentication
+POST           /api/auth/signup                  controllers.AuthController.signUp
+GET            /api/auth/signup/:token           controllers.AuthController.signUpConfirm(token: String)
+POST           /api/auth/signin                  controllers.AuthController.signIn
+GET            /api/auth/social/:provider        controllers.AuthController.social(provider: String)
+GET            /api/auth/signout                 controllers.AuthController.signOut
+POST           /api/auth/reset                   controllers.AuthController.resetPassword
+POST           /api/auth/reset/:token            controllers.AuthController.resetPasswordConfirm(token: String)
+POST           /api/auth/change                  controllers.AuthController.changePassword
 # Features storage
-GET            /api/features                 controllers.CharlistFeatureController.lookup(col, term: Option[String] = None)
-POST           /api/features                 controllers.CharlistFeatureController.add(col)
-GET            /api/features/search          controllers.CharlistFeatureController.lookup(col: String, term: Option[String])
-GET            /api/features/new/:col        controllers.CharlistFeatureController.create(col)
-GET            /api/features/:id             controllers.CharlistFeatureController.get(id)
+GET            /api/features/search              controllers.CharlistFeatureController.lookup(col: String, term: Option[String])
+GET            /api/features/new/:col            controllers.CharlistFeatureController.create(col)
+GET            /api/features                     controllers.CharlistFeatureController.lookup(col, term: Option[String] = None)
+POST           /api/features                     controllers.CharlistFeatureController.add(col)
+GET            /api/features/:id                 controllers.CharlistFeatureController.get(id: String)
 # Charlist storage
-GET            /api/chars                    controllers.CharlistController.list
-POST           /api/chars                    controllers.CharlistController.add()
-PUT            /api/chars                    controllers.CharlistController.replace()
-GET            /api/chars/default            controllers.CharlistController.create(p = "")
-GET            /api/chars/:id                controllers.CharlistController.get(id)
-PATCH          /api/chars/:id                controllers.CharlistController.update(id)
-DELETE         /api/chars/:id                controllers.CharlistController.delete(id)
-GET            /api/chars/:id/pic            controllers.CharlistController.getPic(id)
-PUT            /api/chars/:id/pic            controllers.CharlistController.storePic(id)
-
-OPTIONS        /*url                         controllers.MiscController.options(url: String)
+GET            /api/chars/default                controllers.CharlistController.create
+GET            /api/chars                        controllers.CharlistController.list
+POST           /api/chars                        controllers.CharlistController.add
+GET            /api/chars/:id/pic                controllers.CharlistController.getPic(id)
+PUT            /api/chars/:id/pic                controllers.CharlistController.storePic(id)
+GET            /api/chars/:id                    controllers.CharlistController.get(id)
+PUT            /api/chars/:id                    controllers.CharlistController.replace(id)
+PATCH          /api/chars/:id                    controllers.CharlistController.update(id)
+DELETE         /api/chars/:id                    controllers.CharlistController.delete(id)
+# OPTIONS for all paths
+OPTIONS        /*url                             controllers.MiscController.options(url: String)
