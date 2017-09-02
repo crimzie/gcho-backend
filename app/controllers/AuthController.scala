@@ -66,11 +66,14 @@ class AuthController @Inject()(
   import AuthController._
 
   lazy val authService: AuthenticatorService[JWTAuthenticator] = silhouette.env.authenticatorService
-  lazy val jWTSettings: JWTAuthenticatorSettings =
-    JWTAuthenticatorSettings("token", sharedSecret = configuration get[String] "silhouette.authenticator.sharedSecret")
-  private val handleFormErrors = (form: Form[_]) => Future successful BadRequest((JsArray.empty /: form.errors) {
+  //  lazy val jWTSettings: JWTAuthenticatorSettings =
+  //    JWTAuthenticatorSettings("token", sharedSecret = configuration get[String] "silhouette.authenticator.sharedSecret")
+  val handleFormErrors: (Form[_]) => Future[Result] = f => Future successful BadRequest((JsArray.empty /: f.errors) {
     case (ja, e) => ja :+ Json.obj("key" -> e.key, "messages" -> Json.toJson(e.messages))
   })
+  val signupUrl: String = configuration.get[String]("mail.signupUrl")
+  val resetUrl: String = configuration.get[String]("mail.resetUrl")
+  val mailerMock: Boolean = configuration.get[Boolean]("play.mailer.mock")
 
   def signUp(): Action[AnyContent] = Action async { implicit request =>
     (signUpForm bindFromRequest) fold(
@@ -87,8 +90,8 @@ class AuthController @Inject()(
             _ <- authInfoRepository save(loginInfo, passwordHasher hash data.password._1)
             token = UserToken(userId = user._id, email = data.email, signUp = true)
             _ <- tokenDao save token
-            _ <- mailer welcome(user.name, data.email, s"https://${request.host}/auth/signup/confirm/${token._id}")
-          } yield Accepted
+            _ <- mailer welcome(user.name, data.email, signupUrl + token._id)
+          } yield if (mailerMock) Accepted(token._id) else Accepted
       },
       hasErrors = handleFormErrors)
   }
@@ -169,8 +172,8 @@ class AuthController @Inject()(
           val token = UserToken(userId = user._id, email = email, signUp = false)
           for {
             _ <- tokenDao save token
-            _ <- mailer resetPassword(email, s"https://${request.host}/auth/reset/confirm/${token._id}")
-          } yield Accepted
+            _ <- mailer resetPassword(email, resetUrl + token._id)
+          } yield if (mailerMock) Accepted(token._id) else Accepted
         case _ => Future successful NotFound
       },
       hasErrors = handleFormErrors)
