@@ -17,14 +17,18 @@ GET            /api/features                     controllers.CharlistFeatureCont
 POST           /api/features                     controllers.CharlistFeatureController.add(col)
 GET            /api/features/:id                 controllers.CharlistFeatureController.get(id: String)
 # Charlist storage
-GET            /api/chars/default                controllers.CharlistController.create
-GET            /api/chars                        controllers.CharlistController.list
-POST           /api/chars                        controllers.CharlistController.add
-GET            /api/chars/:id/pic                controllers.CharlistController.getPic(id)
-PUT            /api/chars/:id/pic                controllers.CharlistController.storePic(id)
-GET            /api/chars/:id                    controllers.CharlistController.get(id)
-PUT            /api/chars/:id                    controllers.CharlistController.replace(id)
-PATCH          /api/chars/:id                    controllers.CharlistController.update(id)
-DELETE         /api/chars/:id                    controllers.CharlistController.delete(id)
+GET            /api/characters/default           controllers.CharlistController.create
+GET            /api/characters                   controllers.CharlistController.list
+POST           /api/characters                   controllers.CharlistController.add
+GET            /api/characters/:id/pic           controllers.CharlistController.getPic(id)
+PUT            /api/characters/:id/pic           controllers.CharlistController.storePic(id)
+GET            /api/characters/:id               controllers.CharlistController.get(id)
+PUT            /api/characters/:id               controllers.CharlistController.replace(id)
+PATCH          /api/characters/:id               controllers.CharlistController.update(id)
+DELETE         /api/characters/:id               controllers.CharlistController.delete(id)
 # OPTIONS for all paths
-OPTIONS        /*url                             controllers.MiscController.options(url: String)
+OPTIONS        /api/*url                         controllers.MiscController.options(url: String)
+# Swagger UI
+GET            /swagger                          controllers.Assets.at(path = "/public/lib/swagger-ui", file ="index.html")
+GET            /api.yml                          controllers.Assets.at(path = "/public", file = "swagger.yml")
+GET            /*file                            controllers.Assets.at(path = "/public/lib/swagger-ui", file)

@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
   "com.iheart" %% "ficus" % "1.4.0",
   "org.reactivemongo" %% "play2-reactivemongo" % "0.12.6-play26",
   "net.codingwell" %% "scala-guice" % "4.1.0",
-  "org.webjars" % "swagger-ui" % "3.1.4",
+  "org.webjars" % "swagger-ui" % "3.1.7",
   "org.scalaz" %% "scalaz-core" % "7.2.15",
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.1" % "test",
   "org.mockito" % "mockito-core" % "1.10.19" % "test",

@@ -7,7 +7,7 @@ import scala.language.postfixOps
 import scala.util.Random
 
 case class UserToken(
-                      _id: String = Random.alphanumeric take 12 mkString,
+                      _id: String = Random.alphanumeric take 16 mkString,
                       userId: String,
                       email: String,
                       expire: Long = new DateTime plusHours 12 getMillis,

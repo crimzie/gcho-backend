@@ -7,7 +7,5 @@
 ###Running in dev
 * Have MongoDB running on local machine
 * `sbt run`
-
-###Testng
-* Run and
-* In `test/`: `newman run api_spec.json`
+* API description with Swagger: http://localhost:9000/swagger?url=api.yml
+* Testing: in `test/` `newman run api_spec.json --ignore-redirects`

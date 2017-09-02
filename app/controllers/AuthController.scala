@@ -1,15 +1,13 @@
 package controllers
 
-import java.util.NoSuchElementException
-
 import com.google.inject.{Inject, Singleton}
 import com.mohiva.play.silhouette.api.crypto.Base64AuthenticatorEncoder
-import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.services.AuthenticatorService
 import com.mohiva.play.silhouette.api.util.{Credentials, PasswordHasher}
 import com.mohiva.play.silhouette.api.{LoginInfo, Silhouette}
 import com.mohiva.play.silhouette.impl.authenticators.{JWTAuthenticator, JWTAuthenticatorSettings}
+import com.mohiva.play.silhouette.impl.exceptions.{IdentityNotFoundException, InvalidPasswordException}
 import com.mohiva.play.silhouette.impl.providers.{SocialProvider, _}
 import daos.{UserDao, UserTokenDao}
 import models.auth._
@@ -18,7 +16,7 @@ import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
-import play.api.libs.json.{JsArray, JsString}
+import play.api.libs.json.{JsArray, Json}
 import play.api.mvc._
 import services.Mailer
 
@@ -71,7 +69,7 @@ class AuthController @Inject()(
   lazy val jWTSettings: JWTAuthenticatorSettings =
     JWTAuthenticatorSettings("token", sharedSecret = configuration get[String] "silhouette.authenticator.sharedSecret")
   private val handleFormErrors = (form: Form[_]) => Future successful BadRequest((JsArray.empty /: form.errors) {
-    case (ja, e) => ja :+ JsString(e.message)
+    case (ja, e) => ja :+ Json.obj("key" -> e.key, "messages" -> Json.toJson(e.messages))
   })
 
   def signUp(): Action[AnyContent] = Action async { implicit request =>
@@ -106,7 +104,7 @@ class AuthController @Inject()(
           _ <- userDao save optUsr.get.copy(email = Some(Mail(token.email, confirmed = true)))
           result <- authService embed(value, Ok)
         } yield result else Future successful Gone
-      case _ => Future successful BadRequest
+      case _ => Future successful NotFound
     }
   }
 
@@ -121,8 +119,8 @@ class AuthController @Inject()(
         result <- if (optUser.get.email.exists(_.confirmed)) authService embed(value, Accepted)
         else Future successful Unauthorized
       } yield result) recover {
-        case _: NoSuchElementException => Unauthorized
-        case _: ProviderException => Unauthorized
+        case _: InvalidPasswordException => Forbidden
+        case _: IdentityNotFoundException => NotFound
       },
       hasErrors = handleFormErrors)
   }
@@ -137,32 +135,31 @@ class AuthController @Inject()(
             profile <- provider retrieveProfile authInfo map (_.asInstanceOf[CommonSocialProfile])
             result <- userDao retrieve profile.loginInfo flatMap {
               case Some(_) => Future successful Ok
-              case _ => for {
-                result <- profile.email map userDao.byMail getOrElse Future.successful(None) flatMap {
-                  case Some(u) if u.logins isDefinedAt profile.loginInfo.providerID => Future successful Conflict
-                  case optSameEml => for {
-                    _ <- userDao save (optSameEml map { u =>
-                      u.copy(logins = u.logins + (profile.loginInfo.providerID -> profile.loginInfo.providerKey))
-                    } getOrElse User(
-                      name = profile.fullName getOrElse "",
-                      email = profile.email.map(m => Mail(m, confirmed = true)),
-                      logins = Map(profile.loginInfo.providerID -> profile.loginInfo.providerKey)))
-                    _ <- authInfoRepository save(profile.loginInfo, authInfo)
-                  } yield Ok
-                }
-              } yield result
+              case _ => profile.email map userDao.byMail getOrElse Future.successful(None) flatMap {
+                case Some(u) if u.logins isDefinedAt profile.loginInfo.providerID => Future successful Conflict
+                case optSameEml => for {
+                  _ <- userDao save (optSameEml map { u =>
+                    u.copy(logins = u.logins + (profile.loginInfo.providerID -> profile.loginInfo.providerKey))
+                  } getOrElse User(
+                    name = profile.fullName getOrElse "",
+                    email = profile.email.map(m => Mail(m, confirmed = true)),
+                    logins = Map(profile.loginInfo.providerID -> profile.loginInfo.providerKey)))
+                  _ <- authInfoRepository save(profile.loginInfo, authInfo)
+                } yield Ok
+              }
             }
-            authenticator <- authService create profile.loginInfo
-            token <- authService init authenticator
-          } yield if (result == Ok) result.withCookies(
-            Cookie("authToken", token, Some(60), "/", Some(request.host), secure = true, httpOnly = false))
-          else result)
+            result <- if (result == Ok) for {
+              authenticator <- authService create profile.loginInfo
+              token <- authService init authenticator
+              result <- authService embed(token, result)
+            } yield result else Future successful result
+          } yield result)
       } yield result
     }
   }
 
   def signOut(): Action[AnyContent] = silhouette.SecuredAction async { implicit request =>
-    authService discard(request.authenticator, Results.Ok)
+    authService discard(request.authenticator, Ok)
   }
 
   def resetPassword(): Action[AnyContent] = Action async { implicit request =>
@@ -201,10 +198,12 @@ class AuthController @Inject()(
   def changePassword(): Action[AnyContent] = silhouette.SecuredAction async { implicit request =>
     (changePasswordForm bindFromRequest) fold(
       success = {
-        case (oldPasw, newPasw) => for {
+        case (oldPasw, newPasw) => (for {
           li <- credentialsProvider authenticate Credentials(request.authenticator.loginInfo.providerKey, oldPasw)
           _ <- authInfoRepository save(li, passwordHasher hash newPasw)
-        } yield Accepted
+        } yield Accepted) recover {
+          case _: InvalidPasswordException => Forbidden
+        }
       },
       hasErrors = handleFormErrors)
   }
