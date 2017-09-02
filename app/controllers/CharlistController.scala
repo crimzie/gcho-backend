@@ -33,14 +33,11 @@ class CharlistController @Inject()(
   }
 
   def list(): Action[AnyContent] = silhouette.SecuredAction async { request =>
-    charlistDao.all(request.identity._id).map(Ok apply Json.toJson(_))
+    charlistDao.all(request.identity._id).map(Ok apply JsArray(_))
   }
 
   def get(id: String): Action[AnyContent] = silhouette.SecuredAction async { request =>
-    charlistDao.find(request.identity._id, id) map {
-      case Some(cl) => Ok(Json toJson cl)
-      case _ => NotFound
-    }
+    charlistDao.find(request.identity._id, id) map (_.fold[Result](NotFound)(Ok.apply))
   }
 
   def create(): Action[AnyContent] = silhouette.SecuredAction async { request =>
@@ -56,8 +53,10 @@ class CharlistController @Inject()(
 
   def update(id: String): Action[JsValue] = (silhouette.SecuredAction async parse.json) { request =>
     charlistDao find(request.identity._id, id) flatMap {
-      case Some(j) => Json.toJsObject(j).deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
-        case JsSuccess(cl, _) => charlistDao save cl.copy(_id = id, player = request.identity._id) map (_ => Accepted)
+      case Some(j) => j.deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
+        case JsSuccess(cl, _) =>
+          val c = cl.copy(_id = id, player = request.identity._id)
+          charlistDao save c map { _ => Accepted(Json toJson cl) }
         case JsError(ers) => Future successful BadRequest((JsObject.empty /: ers) {
           case (jo, (jp, seq)) => jo deepMerge jp.write[JsArray].writes(JsArray apply seq.map(Json toJson _.message))
         })

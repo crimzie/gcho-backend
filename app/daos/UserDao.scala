@@ -24,7 +24,7 @@ trait UserDao extends IdentityService[User] {
 @Singleton
 class MongoUserDao @Inject()(override val mongo: ReactiveMongoApi)(implicit val ec: ExecutionContext)
   extends UserDao with BSONMongoDao {
-  override val colName = "characters"
+  override val colName = "players"
   implicit val authBsonHandler: BSONDocumentHandler[Auth] = Macros.handler[Auth]
   implicit val loginsMapBsonHandler: BSONHandler[BSONArray, Map[String, String]] =
     BSONHandler[BSONArray, Map[String, String]](

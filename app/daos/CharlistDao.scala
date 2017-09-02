@@ -3,6 +3,7 @@ package daos
 import com.google.inject.{ImplementedBy, Inject, Singleton}
 import models.charlist.Charlist
 import models.charlist.Charlist._
+import play.api.libs.json.JsObject
 import play.api.libs.json.Json.obj
 import play.modules.reactivemongo.ReactiveMongoApi
 import play.modules.reactivemongo.json._
@@ -17,9 +18,9 @@ import scala.concurrent.{ExecutionContext, Future}
 trait CharlistDao {
   def save(charlist: Charlist): Future[Unit]
 
-  def all(user: String): Future[Seq[Charlist]]
+  def all(user: String): Future[Seq[JsObject]]
 
-  def find(user: String, id: String): Future[Option[Charlist]]
+  def find(user: String, id: String): Future[Option[JsObject]]
 
   def exists(user: String, id: String): Future[Boolean]
 
@@ -36,17 +37,18 @@ class MongoCharlistDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: Execution
     _ <- collection update(obj(ID -> charlist._id, PLAYER -> charlist.player), charlist, upsert = true)
   } yield ()
 
-  override def all(user: String): Future[Seq[Charlist]] = for {
+  override def all(user: String): Future[Seq[JsObject]] = for {
     collection <- storage
     charlists <- collection
       .find(obj(PLAYER -> user))
-      .cursor[Charlist]()
-      .collect(-1, Cursor.FailOnError[Seq[Charlist]]())
+      .projection(obj(NAME -> 1, TIMESTAMP -> 1))
+      .cursor[JsObject]()
+      .collect(-1, Cursor.FailOnError[Seq[JsObject]]())
   } yield charlists
 
-  override def find(user: String, id: String): Future[Option[Charlist]] = for {
+  override def find(user: String, id: String): Future[Option[JsObject]] = for {
     collection <- storage
-    charlist <- collection.find(obj(ID -> id, PLAYER -> user)).one[Charlist]
+    charlist <- collection.find(obj(ID -> id, PLAYER -> user)).one[JsObject]
   } yield charlist
 
   override def exists(user: String, id: String): Future[Boolean] = for {

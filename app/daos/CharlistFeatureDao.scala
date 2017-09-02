@@ -39,7 +39,7 @@ class MongoCharlistFeatureDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: Ex
   storage map (_.indexesManager ensure Index(CAT -> Ascending :: Nil, name = Some(s"bin-$CAT-1")))
   storage map (_.indexesManager ensure Index(NAME -> Text :: Nil, name = Some(s"txt-$NAME")))
 
-  private val defaultsPreloading: Future[Unit] = for {
+  /*private val defaultsPreloading: Future[Unit] = for {
     s <- storage
     _ <- s remove obj(USER -> DEF_USER_VAL)
     stream = DefaultTraits.parse("defaults/adv.xml") ++ DefaultSkills.parse("defaults/skl.xml") ++
@@ -51,7 +51,7 @@ class MongoCharlistFeatureDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: Ex
     case Success(_) => logger info "Default features collection loaded to db."
     case Failure(_) => logger warn "Failed to load default features collection to db."
   }
-  Await.result(defaultsPreloading, Duration(3, MINUTES))
+  Await.result(defaultsPreloading, Duration(3, MINUTES))*/
 
   override def save(feature: FlaggedFeature[_, _]): Future[Unit] = for {
     collection <- storage
