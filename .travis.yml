@@ -1,4 +1,5 @@
 language: scala
+cache: sbt
 install: npm install -g newman
 script:
 - sbt test
