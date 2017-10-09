@@ -1,6 +1,5 @@
 package controllers
 
-import com.google.inject.Inject
 import com.mohiva.play.silhouette.api.Silhouette
 import daos.CharlistFeatureDao
 import models.auth.JWTEnv
@@ -14,8 +13,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Success, Try}
 
-class CharlistFeatureController @Inject()(silhouette: Silhouette[JWTEnv], charlisFeatureDao: CharlistFeatureDao)
-                                         (implicit ec: ExecutionContext) extends InjectedController {
+class CharlistFeatureController(silhouette: Silhouette[JWTEnv], charlisFeatureDao: CharlistFeatureDao)
+                               (implicit ec: ExecutionContext) extends InjectedController {
+  scribe debug "Instantiating."
 
   def add(col: String): Action[JsValue] = (silhouette.SecuredAction async parse.json) { request =>
     Try {

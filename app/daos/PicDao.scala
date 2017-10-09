@@ -1,13 +1,11 @@
 package daos
 
-import com.google.inject.{ImplementedBy, Inject, Singleton}
-import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.DefaultDB
 import reactivemongo.bson._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-@ImplementedBy(classOf[MongoPicDao])
 trait PicDao {
   def save(id: String, pic: Array[Byte]): Future[Unit]
 
@@ -16,9 +14,9 @@ trait PicDao {
   def delete(id: String): Future[Unit]
 }
 
-@Singleton
-class MongoPicDao @Inject()(override val mongo: ReactiveMongoApi)(implicit val ec: ExecutionContext)
+class MongoPicDao(override val mongo: Future[DefaultDB])(implicit val ec: ExecutionContext)
   extends PicDao with BSONMongoDao {
+  scribe debug "Instantiating."
   override val colName: String = "pics"
   val PIC = "pic"
   val ID = "_id"

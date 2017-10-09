@@ -1,7 +1,6 @@
 package controllers
 
 import akka.util.ByteString
-import com.google.inject.Inject
 import com.mohiva.play.silhouette.api.Silhouette
 import com.sksamuel.scrimage.Image
 import com.sksamuel.scrimage.nio.PngWriter
@@ -9,7 +8,6 @@ import daos.{CharlistDao, PicDao}
 import models.auth.JWTEnv
 import models.charlist.Charlist._
 import models.charlist._
-import play.api.Configuration
 import play.api.http.HttpEntity
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
@@ -18,12 +16,11 @@ import play.api.mvc._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class CharlistController @Inject()(
-                                    silhouette: Silhouette[JWTEnv],
-                                    charlistDao: CharlistDao,
-                                    picDao: PicDao,
-                                    configuration: Configuration)
-                                  (implicit ec: ExecutionContext) extends InjectedController {
+class CharlistController(
+                          silhouette: Silhouette[JWTEnv],
+                          charlistDao: CharlistDao,
+                          picDao: PicDao)(implicit ec: ExecutionContext) extends InjectedController {
+  scribe debug "Instantiating."
   implicit val pw: PngWriter = PngWriter.MinCompression
 
   def add(): Action[Charlist] = (silhouette.SecuredAction async parse.json[Charlist]) { request =>
@@ -51,9 +48,9 @@ class CharlistController @Inject()(
     charlistDao save cl map { _ => Accepted(Json toJson cl) }
   }
 
-  def update(id: String): Action[JsValue] = (silhouette.SecuredAction async parse.json) { request =>
+  def update(id: String): Action[JsObject] = (silhouette.SecuredAction async parse.json[JsObject]) { request =>
     charlistDao find(request.identity._id, id) flatMap {
-      case Some(j) => j.deepMerge(request.body.asInstanceOf[JsObject]).validate[Charlist] match {
+      case Some(j) => j.deepMerge(request.body).validate[Charlist] match {
         case JsSuccess(cl, _) =>
           val c = cl.copy(_id = id, player = request.identity._id)
           charlistDao save c map { _ => Accepted(Json toJson cl) }

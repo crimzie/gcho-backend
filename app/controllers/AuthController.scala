@@ -1,18 +1,16 @@
 package controllers
 
-import com.google.inject.{Inject, Singleton}
 import com.mohiva.play.silhouette.api.crypto.Base64AuthenticatorEncoder
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.services.AuthenticatorService
 import com.mohiva.play.silhouette.api.util.{Credentials, PasswordHasher}
 import com.mohiva.play.silhouette.api.{LoginInfo, Silhouette}
-import com.mohiva.play.silhouette.impl.authenticators.{JWTAuthenticator, JWTAuthenticatorSettings}
+import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
 import com.mohiva.play.silhouette.impl.exceptions.{IdentityNotFoundException, InvalidPasswordException}
 import com.mohiva.play.silhouette.impl.providers.{SocialProvider, _}
 import daos.{UserDao, UserTokenDao}
 import models.auth._
 import org.joda.time.DateTime
-import play.api.Configuration
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.data.validation.Constraints._
@@ -47,33 +45,29 @@ object AuthController {
     "newPassword" -> (nonEmptyText verifying minLength(6))))
 }
 
-@Singleton
-class AuthController @Inject()(
-                                components: ControllerComponents,
-                                silhouette: Silhouette[JWTEnv],
-                                socialProviderRegistry: SocialProviderRegistry,
-                                authInfoRepository: AuthInfoRepository,
-                                authenticatorEncoder: Base64AuthenticatorEncoder,
-                                credentialsProvider: CredentialsProvider,
-                                userDao: UserDao,
-                                tokenDao: UserTokenDao,
-                                passwordHasher: PasswordHasher,
-                                assets: Assets,
-                                configuration: Configuration,
-                                mailer: Mailer)(implicit ec: ExecutionContext) extends InjectedController {
+case class AuthControllerConf(signupUrl: String, resetUrl: String, mailMock: Boolean)
+
+class AuthController(
+                      components: ControllerComponents,
+                      silhouette: Silhouette[JWTEnv],
+                      socialProviderRegistry: SocialProviderRegistry,
+                      authInfoRepository: AuthInfoRepository,
+                      authenticatorEncoder: Base64AuthenticatorEncoder,
+                      credentialsProvider: CredentialsProvider,
+                      userDao: UserDao,
+                      tokenDao: UserTokenDao,
+                      passwordHasher: PasswordHasher,
+                      conf: AuthControllerConf,
+                      mailer: Mailer)(implicit ec: ExecutionContext) extends InjectedController {
   setControllerComponents(components)
+  scribe debug "Instantiating."
 
   import AuthController._
 
   lazy val authService: AuthenticatorService[JWTAuthenticator] = silhouette.env.authenticatorService
-  //  lazy val jWTSettings: JWTAuthenticatorSettings =
-  //    JWTAuthenticatorSettings("token", sharedSecret = configuration get[String] "silhouette.authenticator.sharedSecret")
   val handleFormErrors: (Form[_]) => Future[Result] = f => Future successful BadRequest((JsArray.empty /: f.errors) {
     case (ja, e) => ja :+ Json.obj("key" -> e.key, "messages" -> Json.toJson(e.messages))
   })
-  val signupUrl: String = configuration.get[String]("mail.signupUrl")
-  val resetUrl: String = configuration.get[String]("mail.resetUrl")
-  val mailerMock: Boolean = configuration.get[Boolean]("play.mailer.mock")
 
   def signUp(): Action[AnyContent] = Action async { implicit request =>
     (signUpForm bindFromRequest) fold(
@@ -90,8 +84,8 @@ class AuthController @Inject()(
             _ <- authInfoRepository save(loginInfo, passwordHasher hash data.password._1)
             token = UserToken(userId = user._id, email = data.email, signUp = true)
             _ <- tokenDao save token
-            _ <- mailer welcome(user.name, data.email, signupUrl + token._id)
-          } yield if (mailerMock) Accepted(token._id) else Accepted
+            _ <- mailer welcome(user.name, data.email, conf.signupUrl + token._id)
+          } yield if (conf.mailMock) Accepted(token._id) else Accepted
       },
       hasErrors = handleFormErrors)
   }
@@ -172,8 +166,8 @@ class AuthController @Inject()(
           val token = UserToken(userId = user._id, email = email, signUp = false)
           for {
             _ <- tokenDao save token
-            _ <- mailer resetPassword(email, resetUrl + token._id)
-          } yield if (mailerMock) Accepted(token._id) else Accepted
+            _ <- mailer resetPassword(email, conf.resetUrl + token._id)
+          } yield if (conf.mailMock) Accepted(token._id) else Accepted
         case _ => Future successful NotFound
       },
       hasErrors = handleFormErrors)

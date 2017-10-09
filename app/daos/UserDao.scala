@@ -1,18 +1,16 @@
 package daos
 
 import com.github.dwickern.macros.NameOf
-import com.google.inject.{ImplementedBy, Inject, Singleton}
 import com.mohiva.play.silhouette.api.LoginInfo
 import com.mohiva.play.silhouette.api.services.IdentityService
 import models.auth.{Auth, Mail, User}
-import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.DefaultDB
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
 import reactivemongo.bson.{BSONArray, BSONDocument, BSONDocumentHandler, BSONHandler, Macros}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[MongoUserDao])
 trait UserDao extends IdentityService[User] {
   def save(user: User): Future[Unit]
 
@@ -21,9 +19,9 @@ trait UserDao extends IdentityService[User] {
   def byMail(mail: String): Future[Option[User]]
 }
 
-@Singleton
-class MongoUserDao @Inject()(override val mongo: ReactiveMongoApi)(implicit val ec: ExecutionContext)
+class MongoUserDao(override val mongo: Future[DefaultDB])(implicit val ec: ExecutionContext)
   extends UserDao with BSONMongoDao {
+  scribe debug "Instantiating."
   override val colName = "players"
   implicit val authBsonHandler: BSONDocumentHandler[Auth] = Macros.handler[Auth]
   implicit val loginsMapBsonHandler: BSONHandler[BSONArray, Map[String, String]] =

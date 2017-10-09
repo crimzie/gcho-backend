@@ -1,20 +1,17 @@
 package daos
 
-import com.google.inject.{ImplementedBy, Inject, Singleton}
 import models.charlist.Charlist
 import models.charlist.Charlist._
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json.obj
-import play.modules.reactivemongo.ReactiveMongoApi
-import play.modules.reactivemongo.json._
-import reactivemongo.api.Cursor
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
+import reactivemongo.api.{Cursor, DefaultDB}
+import reactivemongo.play.json._
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[MongoCharlistDao])
 trait CharlistDao {
   def save(charlist: Charlist): Future[Unit]
 
@@ -27,9 +24,10 @@ trait CharlistDao {
   def delete(user: String, id: String): Future[Unit]
 }
 
-@Singleton
-class MongoCharlistDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext) extends CharlistDao {
-  val storage: Future[JSONCollection] = mongo.database map (_ collection[JSONCollection] "characters")
+class MongoCharlistDao(mongo: Future[DefaultDB])(implicit ec: ExecutionContext) extends CharlistDao {
+  scribe debug "Instantiating."
+  val storage: Future[JSONCollection] = mongo map (_ collection[JSONCollection] "characters")
+
   storage map (_.indexesManager ensure Index(PLAYER -> Ascending :: Nil, name = Some(s"bin-$PLAYER-1")))
 
   override def save(charlist: Charlist): Future[Unit] = for {

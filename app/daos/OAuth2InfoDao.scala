@@ -1,20 +1,18 @@
 package daos
 
-import com.google.inject.{ImplementedBy, Inject, Singleton}
 import com.mohiva.play.silhouette.api.LoginInfo
 import com.mohiva.play.silhouette.impl.providers.OAuth2Info
 import com.mohiva.play.silhouette.persistence.daos.DelegableAuthInfoDAO
-import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.DefaultDB
 import reactivemongo.bson.{BSONDocument, BSONDocumentHandler, Macros}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[MongoOAuth2InfoDao])
 trait OAuth2InfoDao extends DelegableAuthInfoDAO[OAuth2Info]
 
-@Singleton
-class MongoOAuth2InfoDao @Inject()(override val mongo: ReactiveMongoApi)(override implicit val ec: ExecutionContext)
+class MongoOAuth2InfoDao(override val mongo: Future[DefaultDB])(override implicit val ec: ExecutionContext)
   extends OAuth2InfoDao with BSONMongoDao {
+  scribe debug "Instantiating."
   override val colName: String = "passwords"
   implicit val loginInfoHandler: BSONDocumentHandler[LoginInfo] = Macros.handler[LoginInfo]
   implicit val oauth2InfoHandler: BSONDocumentHandler[OAuth2Info] = Macros.handler[OAuth2Info]

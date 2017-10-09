@@ -1,14 +1,12 @@
 package daos
 
 import com.github.dwickern.macros.NameOf
-import com.google.inject.{ImplementedBy, Inject, Singleton}
 import models.auth.UserToken
-import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.DefaultDB
 import reactivemongo.bson.{BSONDocumentHandler, Macros}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[MongoUserTokenDao])
 trait UserTokenDao {
   def find(id: String): Future[Option[UserToken]]
 
@@ -17,9 +15,9 @@ trait UserTokenDao {
   def remove(id: String): Future[Unit]
 }
 
-@Singleton
-class MongoUserTokenDao @Inject()(override val mongo: ReactiveMongoApi)(implicit val ec: ExecutionContext)
+class MongoUserTokenDao(override val mongo: Future[DefaultDB])(implicit val ec: ExecutionContext)
   extends UserTokenDao with BSONMongoDao {
+  scribe debug "Instantiating."
   override val colName = "usertokens"
   implicit val userTokenHandler: BSONDocumentHandler[UserToken] = Macros.handler[UserToken]
   val ID: String = NameOf.nameOf[UserToken](_._id)

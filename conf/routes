@@ -11,15 +11,15 @@ POST           /api/auth/reset                   controllers.AuthController.rese
 POST           /api/auth/reset/:token            controllers.AuthController.resetPasswordConfirm(token: String)
 POST           /api/auth/change                  controllers.AuthController.changePassword
 # Features storage
-GET            /api/features/search              controllers.CharlistFeatureController.lookup(col: String, term: Option[String])
-GET            /api/features/new/:col            controllers.CharlistFeatureController.create(col)
 GET            /api/features                     controllers.CharlistFeatureController.lookup(col, term: Option[String] = None)
 POST           /api/features                     controllers.CharlistFeatureController.add(col)
+GET            /api/features/search              controllers.CharlistFeatureController.lookup(col: String, term: Option[String])
+GET            /api/features/new/:col            controllers.CharlistFeatureController.create(col)
 GET            /api/features/:id                 controllers.CharlistFeatureController.get(id: String)
 # Charlist storage
-GET            /api/characters/default           controllers.CharlistController.create
 GET            /api/characters                   controllers.CharlistController.list
 POST           /api/characters                   controllers.CharlistController.add
+GET            /api/characters/default           controllers.CharlistController.create
 GET            /api/characters/:id/pic           controllers.CharlistController.getPic(id)
 PUT            /api/characters/:id/pic           controllers.CharlistController.storePic(id)
 GET            /api/characters/:id               controllers.CharlistController.get(id)

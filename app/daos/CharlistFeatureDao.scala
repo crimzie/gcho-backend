@@ -1,17 +1,15 @@
 package daos
 
-import com.google.inject.{ImplementedBy, Inject, Singleton}
 import models.charlist.FlaggedFeature._
 import models.charlist._
-import play.api.Logger
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json.{arr, obj}
-import play.modules.reactivemongo.ReactiveMongoApi
-import play.modules.reactivemongo.json._
-import reactivemongo.api.Cursor
+import reactivemongo.api.commands.MultiBulkWriteResult
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.{Ascending, Text}
+import reactivemongo.api.{Cursor, DefaultDB}
 import reactivemongo.play.json.collection.JSONCollection
+import reactivemongo.play.json._
 import services.defaults._
 
 import scala.concurrent.duration.{Duration, MINUTES}
@@ -19,7 +17,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
-@ImplementedBy(classOf[MongoCharlistFeatureDao])
 trait CharlistFeatureDao {
   def save(feature: FlaggedFeature[_, _]): Future[Unit]
 
@@ -30,28 +27,28 @@ trait CharlistFeatureDao {
   def find(user: String, cat: Set[String], term: Option[String] = None): Future[Seq[JsObject]]
 }
 
-@Singleton
-class MongoCharlistFeatureDao @Inject()(mongo: ReactiveMongoApi)(implicit ec: ExecutionContext)
-  extends CharlistFeatureDao {
-  val logger: Logger = Logger(classOf[MongoCharlistFeatureDao])
-  val storage: Future[JSONCollection] = mongo.database map (_ collection[JSONCollection] "features")
+class MongoCharlistFeatureDao(mongo: Future[DefaultDB])(implicit ec: ExecutionContext) extends CharlistFeatureDao {
+  scribe debug "Instantiating."
+  val storage: Future[JSONCollection] = mongo map (_ collection[JSONCollection] "features")
+
   storage map (_.indexesManager ensure Index(USER -> Ascending :: Nil, name = Some(s"bin-$USER-1")))
   storage map (_.indexesManager ensure Index(CAT -> Ascending :: Nil, name = Some(s"bin-$CAT-1")))
   storage map (_.indexesManager ensure Index(NAME -> Text :: Nil, name = Some(s"txt-$NAME")))
 
-  /*private val defaultsPreloading: Future[Unit] = for {
+  private val defaultsPreloading: Future[Unit] = for {
     s <- storage
     _ <- s remove obj(USER -> DEF_USER_VAL)
-    stream = DefaultTraits.parse("defaults/adv.xml") ++ DefaultSkills.parse("defaults/skl.xml") ++
-      DefaultTechniques.parse("defaults/skl.xml") ++ DefaultArmor.parse("defaults/eqp.xml") ++
-      DefaultWeapons.parse("defaults/eqp.xml") ++ DefaultItems.parse("defaults/eqp.xml")
+    stream = DefaultTraits.parse("/adv.xml") ++ DefaultSkills.parse("/skl.xml") ++
+      DefaultTechniques.parse("/skl.xml") ++ DefaultArmor.parse("/eqp.xml") ++
+      DefaultWeapons.parse("/eqp.xml") ++ DefaultItems.parse("/eqp.xml")
     _ <- s bulkInsert(stream, ordered = false)
   } yield ()
   defaultsPreloading onComplete {
-    case Success(_) => logger info "Default features collection loaded to db."
-    case Failure(_) => logger warn "Failed to load default features collection to db."
+    case Success(_) => scribe info "Default features collection loaded to db."
+    case Failure(t) =>
+      scribe warn "Failed to load default features collection to db:"
+      scribe debug t
   }
-  Await.result(defaultsPreloading, Duration(3, MINUTES))*/
 
   override def save(feature: FlaggedFeature[_, _]): Future[Unit] = for {
     collection <- storage
