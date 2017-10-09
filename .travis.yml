@@ -3,4 +3,4 @@ install: npm install -g newman
 script:
 - sbt test
 - setsid nohup sbt run &
-- cd test/ && newman run api_spec.json
+- newman run test/api_spec.json
