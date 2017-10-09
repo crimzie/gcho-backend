@@ -7,5 +7,5 @@ cache:
 install: npm install -g newman
 script:
 - sbt test
-- setsid nohup sbt run & && sleep 15
+- setsid nohup sbt run && sleep 15
 - newman run test/api_suite.json --ignore-redirects
