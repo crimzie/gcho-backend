@@ -1,12 +1,12 @@
 ![Build Status](https://travis-ci.org/crimzie/gcho-backend.svg?branch=master)
 
-##Scala backend for an online GURPS™ toolkit.
+## Scala backend for an online GURPS™ toolkit.
 
-###Setup
+### Setup
 * Install sbt
 * Install newman
 
-###Running in dev
+### Running in dev
 * Have MongoDB running on local machine
 * `sbt run`
 * API description with Swagger: http://localhost:9000/swagger?url=api.yml
