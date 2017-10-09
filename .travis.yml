@@ -1,0 +1,6 @@
+language: scala
+install: npm install -g newman
+script:
+- sbt test
+- setsid nohup sbt run &
+- cd test/ && newman run api_spec.json
