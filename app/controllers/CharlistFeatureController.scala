@@ -13,8 +13,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Success, Try}
 
-class CharlistFeatureController(silhouette: Silhouette[JWTEnv], charlisFeatureDao: CharlistFeatureDao)
-                               (implicit ec: ExecutionContext) extends InjectedController {
+class CharlistFeatureController(
+                                 components: ControllerComponents,
+                                 silhouette: Silhouette[JWTEnv],
+                                 charlisFeatureDao: CharlistFeatureDao)
+                               (implicit ec: ExecutionContext) extends AbstractController(components) {
   scribe debug "Instantiating."
 
   def add(col: String): Action[JsValue] = (silhouette.SecuredAction async parse.json) { request =>

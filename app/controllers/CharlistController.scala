@@ -17,9 +17,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 class CharlistController(
+                          components: ControllerComponents,
                           silhouette: Silhouette[JWTEnv],
                           charlistDao: CharlistDao,
-                          picDao: PicDao)(implicit ec: ExecutionContext) extends InjectedController {
+                          picDao: PicDao)(implicit ec: ExecutionContext) extends AbstractController(components) {
   scribe debug "Instantiating."
   implicit val pw: PngWriter = PngWriter.MinCompression
 

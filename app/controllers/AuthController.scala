@@ -58,8 +58,7 @@ class AuthController(
                       tokenDao: UserTokenDao,
                       passwordHasher: PasswordHasher,
                       conf: AuthControllerConf,
-                      mailer: Mailer)(implicit ec: ExecutionContext) extends InjectedController {
-  setControllerComponents(components)
+                      mailer: Mailer)(implicit ec: ExecutionContext) extends AbstractController(components) {
   scribe debug "Instantiating."
 
   import AuthController._

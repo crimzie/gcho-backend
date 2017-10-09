@@ -1,14 +1,14 @@
 package controllers
 
 import play.api.cache.SyncCacheApi
-import play.api.mvc.{Action, AnyContent, InjectedController}
+import play.api.mvc._
 import play.api.routing.Router
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class MiscController(cacheApi: SyncCacheApi, router: => Router)(implicit ec: ExecutionContext)
-  extends InjectedController {
+class MiscController(components: ControllerComponents, cacheApi: SyncCacheApi, router: => Router)
+                    (implicit ec: ExecutionContext) extends AbstractController(components) {
   scribe debug "Instantiating."
   val methods: List[String] = "GET" :: "POST" :: "PUT" :: "DELETE" :: "PATCH" :: Nil
 

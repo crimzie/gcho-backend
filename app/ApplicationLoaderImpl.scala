@@ -108,10 +108,12 @@ class Components(context: ApplicationLoader.Context)
     conf.authControllerConf,
     mailer)
   private val charlistFeatureController: CharlistFeatureController =
-    new CharlistFeatureController(silhouetteProvider, charlistFeatureDao)
-  private val charlistController = new CharlistController(silhouetteProvider, charlistDao, picDao)
-  private val miscController: MiscController =
-    new MiscController(new DefaultSyncCacheApi(new EhCacheApi(new Cache(conf.cacheConf))), router = router)
+    new CharlistFeatureController(controllerComponents, silhouetteProvider, charlistFeatureDao)
+  private val charlistController = new CharlistController(controllerComponents, silhouetteProvider, charlistDao, picDao)
+  private val miscController: MiscController = new MiscController(
+    controllerComponents,
+    new DefaultSyncCacheApi(new EhCacheApi(new Cache(conf.cacheConf))),
+    router = router)
 
   override lazy val router: Router = new Routes(
     httpErrorHandler,

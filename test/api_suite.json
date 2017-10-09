@@ -1,40 +1,71 @@
 {
-	"variables": [],
 	"info": {
 		"name": "GCHO",
-		"_postman_id": "ae70f5db-c6e6-9afb-2fd6-8b1d54c8eeca",
-		"description": "",
-		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+		"_postman_id": "0be73889-ed20-a589-8446-59ffd32dad79",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
 			"name": "http://localhost:9000/api/auth/signup",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.globals.set(\"signup-token\", pm.response.text());"
+						]
+					}
+				}
+			],
 			"request": {
-				"url": "http://localhost:9000/api/auth/signup",
 				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n  \"email\": \"string@string\",\n  \"password\": {\n    \"password1\": \"string\",\n    \"password2\": \"string\"\n  },\n  \"name\": \"string\"\n}"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/auth/signup",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"signup"
+					]
+				}
 			},
 			"response": []
 		},
 		{
 			"name": "http://localhost:9000/api/auth/signup/tdLU18GC70gW",
 			"request": {
-				"url": "http://localhost:9000/api/auth/signup/SzHHKK9c3wAcw5Z5",
 				"method": "GET",
 				"header": [],
 				"body": {},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/auth/signup/{{signup-token}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"signup",
+						"{{signup-token}}"
+					]
+				}
 			},
 			"response": []
 		},
@@ -55,25 +86,35 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/auth/signin",
 				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n\t\"email\": \"string@string\",\n\t\"password\": \"string\",\n\t\"rememberMe\": true\n}"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/auth/signin",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"signin"
+					]
+				}
 			},
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/social/facebook",
+			"name": "http://localhost:9000/api/auth/social/google",
 			"event": [
 				{
 					"listen": "test",
@@ -88,11 +129,26 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/auth/social/google",
 				"method": "GET",
 				"header": [],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/auth/social/google",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"social",
+						"google"
+					]
+				}
 			},
 			"response": []
 		},
@@ -112,45 +168,65 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/auth/reset",
 				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					},
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{ \"email\": \"string@string\" }"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/auth/reset",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"reset"
+					]
+				}
 			},
 			"response": []
 		},
 		{
 			"name": "http://localhost:9000/api/auth/reset/VLH61oFAWGTe",
 			"request": {
-				"url": "http://localhost:9000/api/auth/reset/dBVw6pu1OIeV",
 				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n\t\"password1\": \"string\",\n\t\"password2\": \"string\"\n}"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/auth/reset/dBVw6pu1OIeV",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"reset",
+						"dBVw6pu1OIeV"
+					]
+				}
 			},
 			"response": []
 		},
@@ -170,25 +246,34 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/auth/change",
 				"method": "POST",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					},
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n\t\"oldPassword\": \"string\",\n\t\"newPassword\": \"string\"\n}"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/auth/change",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"auth",
+						"change"
+					]
+				}
 			},
 			"response": []
 		},
@@ -209,17 +294,30 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/default",
 				"method": "GET",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/characters/default",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"default"
+					]
+				}
 			},
 			"response": []
 		},
@@ -242,17 +340,29 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters",
 				"method": "GET",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/characters",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters"
+					]
+				}
 			},
 			"response": []
 		},
@@ -272,18 +382,15 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}/pic",
 				"method": "PUT",
 				"header": [
 					{
 						"key": "Content-Type",
-						"value": "image/png",
-						"description": ""
+						"value": "image/png"
 					},
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
 				"body": {
@@ -291,13 +398,25 @@
 					"formdata": [
 						{
 							"key": "pic",
-							"description": "",
 							"type": "file",
-							"src": "pic.png"
+							"src": "test/pic.png"
 						}
 					]
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}/pic",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}",
+						"pic"
+					]
+				}
 			},
 			"response": []
 		},
@@ -317,17 +436,31 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}/pic",
 				"method": "GET",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}/pic",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}",
+						"pic"
+					]
+				}
 			},
 			"response": []
 		},
@@ -351,17 +484,30 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}",
 				"method": "GET",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}"
+					]
+				}
 			},
 			"response": []
 		},
@@ -384,25 +530,34 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}",
 				"method": "PUT",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					},
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{{char}}"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}"
+					]
+				}
 			},
 			"response": []
 		},
@@ -425,25 +580,34 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}",
 				"method": "PATCH",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					},
 					{
 						"key": "Content-Type",
-						"value": "application/json",
-						"description": ""
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\n\t\"description\": {\n\t\t\"bio\": \"string\"\n\t}\n}"
 				},
-				"description": ""
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}"
+					]
+				}
 			},
 			"response": []
 		},
@@ -463,17 +627,30 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}",
 				"method": "DELETE",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}"
+					]
+				}
 			},
 			"response": []
 		},
@@ -493,17 +670,30 @@
 				}
 			],
 			"request": {
-				"url": "http://localhost:9000/api/characters/{{char_id}}",
 				"method": "GET",
 				"header": [
 					{
 						"key": "X-Auth-Token",
-						"value": "{{X-Auth-Token}}",
-						"description": ""
+						"value": "{{X-Auth-Token}}"
 					}
 				],
-				"body": {},
-				"description": ""
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9000",
+					"path": [
+						"api",
+						"characters",
+						"{{char_id}}"
+					]
+				}
 			},
 			"response": []
 		}
