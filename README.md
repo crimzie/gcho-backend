@@ -1,3 +1,5 @@
+![Build Status](https://travis-ci.org/crimzie/gcho-backend.svg?branch=master)
+
 ##Scala backend for an online GURPS™ toolkit.
 
 ###Setup
