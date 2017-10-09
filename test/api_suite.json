@@ -6,7 +6,7 @@
 	},
 	"item": [
 		{
-			"name": "http://localhost:9000/api/auth/signup",
+			"name": "http://0.0.0.0:9000/api/auth/signup",
 			"event": [
 				{
 					"listen": "test",
@@ -31,10 +31,10 @@
 					"raw": "{\n  \"email\": \"string@string\",\n  \"password\": {\n    \"password1\": \"string\",\n    \"password2\": \"string\"\n  },\n  \"name\": \"string\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/signup",
+					"raw": "http://0.0.0.0:9000/api/auth/signup",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -47,16 +47,16 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/signup/tdLU18GC70gW",
+			"name": "http://0.0.0.0:9000/api/auth/signup/tdLU18GC70gW",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/signup/{{signup-token}}",
+					"raw": "http://0.0.0.0:9000/api/auth/signup/{{signup-token}}",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -70,7 +70,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/signin",
+			"name": "http://0.0.0.0:9000/api/auth/signin",
 			"event": [
 				{
 					"listen": "test",
@@ -98,10 +98,10 @@
 					"raw": "{\n\t\"email\": \"string@string\",\n\t\"password\": \"string\",\n\t\"rememberMe\": true\n}"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/signin",
+					"raw": "http://0.0.0.0:9000/api/auth/signin",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -114,7 +114,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/social/google",
+			"name": "http://0.0.0.0:9000/api/auth/social/google",
 			"event": [
 				{
 					"listen": "test",
@@ -136,10 +136,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/social/google",
+					"raw": "http://0.0.0.0:9000/api/auth/social/google",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -153,7 +153,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/reset",
+			"name": "http://0.0.0.0:9000/api/auth/reset",
 			"event": [
 				{
 					"listen": "test",
@@ -184,10 +184,10 @@
 					"raw": "{ \"email\": \"string@string\" }"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/reset",
+					"raw": "http://0.0.0.0:9000/api/auth/reset",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -200,7 +200,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/reset/VLH61oFAWGTe",
+			"name": "http://0.0.0.0:9000/api/auth/reset/VLH61oFAWGTe",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -214,10 +214,10 @@
 					"raw": "{\n\t\"password1\": \"string\",\n\t\"password2\": \"string\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/reset/dBVw6pu1OIeV",
+					"raw": "http://0.0.0.0:9000/api/auth/reset/dBVw6pu1OIeV",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -231,7 +231,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/auth/change",
+			"name": "http://0.0.0.0:9000/api/auth/change",
 			"event": [
 				{
 					"listen": "test",
@@ -262,10 +262,10 @@
 					"raw": "{\n\t\"oldPassword\": \"string\",\n\t\"newPassword\": \"string\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/auth/change",
+					"raw": "http://0.0.0.0:9000/api/auth/change",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -278,7 +278,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/default",
+			"name": "http://0.0.0.0:9000/api/characters/default",
 			"event": [
 				{
 					"listen": "test",
@@ -306,10 +306,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/default",
+					"raw": "http://0.0.0.0:9000/api/characters/default",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -322,7 +322,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters",
+			"name": "http://0.0.0.0:9000/api/characters",
 			"event": [
 				{
 					"listen": "test",
@@ -352,10 +352,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters",
+					"raw": "http://0.0.0.0:9000/api/characters",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -367,7 +367,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}/pic",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}/pic",
 			"event": [
 				{
 					"listen": "test",
@@ -404,10 +404,10 @@
 					]
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}/pic",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}/pic",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -421,7 +421,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}/pic",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}/pic",
 			"event": [
 				{
 					"listen": "test",
@@ -448,10 +448,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}/pic",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}/pic",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -465,7 +465,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 			"event": [
 				{
 					"listen": "test",
@@ -496,10 +496,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -512,7 +512,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 			"event": [
 				{
 					"listen": "test",
@@ -546,10 +546,10 @@
 					"raw": "{{char}}"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -562,7 +562,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 			"event": [
 				{
 					"listen": "test",
@@ -596,10 +596,10 @@
 					"raw": "{\n\t\"description\": {\n\t\t\"bio\": \"string\"\n\t}\n}"
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -612,7 +612,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 			"event": [
 				{
 					"listen": "test",
@@ -639,10 +639,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
@@ -655,7 +655,7 @@
 			"response": []
 		},
 		{
-			"name": "http://localhost:9000/api/characters/{{char_id}}",
+			"name": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 			"event": [
 				{
 					"listen": "test",
@@ -682,10 +682,10 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "http://localhost:9000/api/characters/{{char_id}}",
+					"raw": "http://0.0.0.0:9000/api/characters/{{char_id}}",
 					"protocol": "http",
 					"host": [
-						"localhost"
+						"0.0.0.0"
 					],
 					"port": "9000",
 					"path": [
