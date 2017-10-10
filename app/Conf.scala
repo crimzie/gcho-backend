@@ -10,6 +10,7 @@ import services.MailerConf
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 object Conf {
   private val hostname: String = Option(System getenv "GCHO_HOSTNAME") getOrElse "0.0.0.0:9000"
@@ -62,11 +63,15 @@ object Conf {
   val testConf: Conf = devConf
 
   lazy val prodConf: Conf = devConf.copy(
-    jwtAuthConf = devConf.jwtAuthConf.copy(sharedSecret = Option(System getenv "GCHO_AUTH_SECRET") get),
+    jwtAuthConf = devConf.jwtAuthConf.copy(
+      sharedSecret = Option(System getenv "GCHO_AUTH_SECRET") getOrElse Random.alphanumeric.take(16).mkString),
+    jcaSignerSettings = devConf.jcaSignerSettings.copy(
+      key = Option(System getenv "GCHO_AUTH_SECRET") getOrElse Random.alphanumeric.take(16).mkString,
+      pepper = Option(System getenv "GCHO_SIGNER_PEPPER") getOrElse devConf.jcaSignerSettings.pepper),
     smtpConf = devConf.smtpConf.copy(
       mock = false,
-      host = Option(System getenv "GCHO_SMTP_HOST") get,
-      port = Option(System getenv "GCHO_SMTP_PORT").get toInt,
+      host = Option(System getenv "GCHO_SMTP_HOST") getOrElse "0.0.0.0",
+      port = Option(System getenv "GCHO_SMTP_PORT") getOrElse "25" toInt,
       user = Option(System getenv "GCHO_SMTP_LOGIN"),
       password = Option(System getenv "GCHO_SMTP_PASSWORD"),
       ssl = true,

@@ -7,5 +7,7 @@ cache:
 install: npm install -g newman
 script:
 - sbt test
-- setsid nohup sbt run && sleep 15
+- sbt stage
+- nohup ./target/universal/stage/bin/gcho-backend -Dconfig.file=conf/prod.conf &>/dev/null &
+- wait 30
 - newman run test/api_suite.json --ignore-redirects
