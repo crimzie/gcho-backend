@@ -21,7 +21,7 @@ object Conf {
 
   val devConf = Conf(
     hostName = hostname,
-    mongoHostPort = Option(System getenv "MONGO") getOrElse "0.0.0.0:27017",
+    mongoHostPort = Option(System getenv "MONGO") getOrElse "127.0.0.1:27017",
     dbName = "gurps",
     jwtAuthConf = JWTAuthenticatorSettings(
       issuerClaim = "GCHO",
@@ -70,7 +70,7 @@ object Conf {
       pepper = Option(System getenv "GCHO_SIGNER_PEPPER") getOrElse devConf.jcaSignerSettings.pepper),
     smtpConf = devConf.smtpConf.copy(
       mock = false,
-      host = Option(System getenv "GCHO_SMTP_HOST") getOrElse "0.0.0.0",
+      host = Option(System getenv "GCHO_SMTP_HOST") getOrElse "127.0.0.1",
       port = Option(System getenv "GCHO_SMTP_PORT") getOrElse "25" toInt,
       user = Option(System getenv "GCHO_SMTP_LOGIN"),
       password = Option(System getenv "GCHO_SMTP_PASSWORD"),
