@@ -1,33 +1,35 @@
 package services
 package defaults
 
-import models.charlist._
-import play.api.libs.json.{JsObject, Json, Writes}
+import models.charlist.bonuses.{DamageBonus, ReactionBonus}
+import models.charlist.skill.Skill
+import models.charlist.{Feature, FeatureEntry}
+import play.api.libs.json.JsObject
 
 import scala.language.postfixOps
 import scala.xml.XML
-import Charlist.flaggedSkillFormat
 
 object DefaultSkills {
   def parse(filePath: String): Stream[JsObject] =
     for {skl <- (XML load (getClass getResourceAsStream filePath)) \ "skill" toStream} yield {
       val (attr, diff) = (skl \ "difficulty" text) partition (_ != '/')
-      val fs = FlaggedSkill(
+      val fs: FeatureEntry[Feature] = FeatureEntry(
         data = Skill(
           name = (skl \ "name").text,
-          spc = (skl \ "specialization").text,
-          tl = (skl \ "tech_level").size,
+          spc = (skl \ "specialization").headOption map (_.text),
+          tl = (skl \ "tech_level").headOption map (_.text) withFilter (_.nonEmpty) map (_.asInt),
           attr = attr,
           diff = diff drop 1,
-          dmgBonuses = for {b <- skl \ "weapon_bonus"} yield BonusDamage(
+          dmgBonuses = for {b <- skl \ "weapon_bonus"} yield DamageBonus(
             skill = (b \ "name").text,
             skillCompare = (b \ "name" \ "@compare").text,
-            spc = (b \ "specialization").text,
-            spcCompare = (b \ "specialization" \ "@compare").text,
-            relSkill = (b \ "level").text.asInt,
-            perDie = (b \ "amount" \ "@per_level").text == "yes",
-            bonus = (b \ "amount").text.asInt),
-          reactBonuses = for (b <- skl \ "reaction_bonus") yield BonusReaction(
+            spc = (b \ "specialization").headOption map (_.text),
+            spcCompare = (b \ "specialization" \ "@compare").headOption map (_.text),
+            minRelSkill = (b \ "level").headOption map (_.text) withFilter (_.nonEmpty) map (_.asInt),
+            perDie = (b \ "amount" \ "@per_level").headOption map (_.text) withFilter (_ == "yes") map
+              (_ => (b \ "amount").text.asInt),
+            minBonus = (b \ "amount").text.asInt),
+          reactBonuses = for (b <- skl \ "reaction_bonus") yield ReactionBonus(
             affected = (b \ "affected").text,
             reputation = (b \ "affected" \ "@reputation").text == "yes",
             perLvl = (b \ "amount" \ "@per_level").text == "yes",
@@ -38,6 +40,6 @@ object DefaultSkills {
           categories = (skl \ "categories" \ "category") map (_.text),
           notes = (skl \ "notes").text),
         ready = !(skl toString() contains '@') && (skl \ "tech_level").isEmpty)
-      Json toJsObject fs
+      FeatureEntry.format writes fs
     } // TODO: missing prerequisites and defaults parsers
 }

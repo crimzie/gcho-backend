@@ -9,6 +9,7 @@ import com.mohiva.play.silhouette.impl.authenticators.JWTAuthenticator
 import com.mohiva.play.silhouette.impl.exceptions.{IdentityNotFoundException, InvalidPasswordException}
 import com.mohiva.play.silhouette.impl.providers.{SocialProvider, _}
 import daos.{UserDao, UserTokenDao}
+import io.swagger.annotations._
 import models.auth._
 import org.joda.time.DateTime
 import play.api.data.Form
@@ -23,42 +24,47 @@ import scala.language.postfixOps
 
 object AuthController {
 
-  case class SignUp(email: String, password: (String, String), name: String)
-
-  case class SignIn(email: String, password: String, rememberMe: Boolean)
-
-  val signUpForm: Form[SignUp] = Form apply mapping(
+  val signUpForm        : Form[SignUp] = Form apply mapping(
     "email" -> email,
-    "password" -> (tuple("password1" -> (nonEmptyText verifying minLength(6)), "password2" -> nonEmptyText) verifying
-      ("error.passwordsDontMatch", password => password._1 == password._2)),
+    "password" -> (mapping(
+      "password1" -> (nonEmptyText verifying minLength(6)),
+      "password2" -> nonEmptyText)(Password.apply)(Password.unapply) verifying
+      ("error.passwordsDontMatch", (password: Password) => password.password1 == password.password2)),
     "name" -> nonEmptyText)(SignUp.apply)(SignUp.unapply)
-  val signInForm: Form[SignIn] = Form apply mapping(
+  val signInForm        : Form[SignIn] = Form apply mapping(
     "email" -> email,
     "password" -> nonEmptyText,
     "rememberMe" -> boolean)(SignIn.apply)(SignIn.unapply)
   val forgotPasswordForm: Form[String] = Form apply single("email" -> email)
-  val newPasswordForm = Form(tuple(
+  val newPasswordForm                  = Form(tuple(
     "password1" -> (nonEmptyText verifying minLength(6)),
     "password2" -> nonEmptyText) verifying("error.passwordsDontMatch", password => password._1 == password._2))
-  val changePasswordForm = Form(tuple(
+  val changePasswordForm               = Form(tuple(
     "oldPassword" -> nonEmptyText,
     "newPassword" -> (nonEmptyText verifying minLength(6))))
 }
 
+case class Password(password1: String, password2: String)
+
+case class SignUp(email: String, password: Password, name: String)
+
+case class SignIn(email: String, password: String, rememberMe: Boolean)
+
 case class AuthControllerConf(signupUrl: String, resetUrl: String, mailMock: Boolean)
 
+@Api("Players")
 class AuthController(
-                      components: ControllerComponents,
-                      silhouette: Silhouette[JWTEnv],
-                      socialProviderRegistry: SocialProviderRegistry,
-                      authInfoRepository: AuthInfoRepository,
-                      authenticatorEncoder: Base64AuthenticatorEncoder,
-                      credentialsProvider: CredentialsProvider,
-                      userDao: UserDao,
-                      tokenDao: UserTokenDao,
-                      passwordHasher: PasswordHasher,
-                      conf: AuthControllerConf,
-                      mailer: Mailer)(implicit ec: ExecutionContext) extends AbstractController(components) {
+    components: ControllerComponents,
+    silhouette: Silhouette[JWTEnv],
+    socialProviderRegistry: SocialProviderRegistry,
+    authInfoRepository: AuthInfoRepository,
+    authenticatorEncoder: Base64AuthenticatorEncoder,
+    credentialsProvider: CredentialsProvider,
+    userDao: UserDao,
+    tokenDao: UserTokenDao,
+    passwordHasher: PasswordHasher,
+    conf: AuthControllerConf,
+    mailer: Mailer)(implicit ec: ExecutionContext) extends AbstractController(components) {
   scribe debug "Instantiating."
 
   import AuthController._
@@ -68,11 +74,21 @@ class AuthController(
     case (ja, e) => ja :+ Json.obj("key" -> e.key, "messages" -> Json.toJson(e.messages))
   })
 
+  @ApiOperation(value = "New player signup form", code = 202)
+  @ApiImplicitParams(Array(new ApiImplicitParam(
+    name = "body",
+    value = "User credentials",
+    required = true,
+    dataType = "controllers.SignUp",
+    paramType = "body")))
+  @ApiResponses(value = Array(
+    new ApiResponse(code = 400, message = "Invalid signup data"),
+    new ApiResponse(code = 409, message = "Player already registerd")))
   def signUp(): Action[AnyContent] = Action async { implicit request =>
     (signUpForm bindFromRequest) fold(
       success = data => userDao byMail data.email flatMap {
         case Some(u) if u.email.exists(_.confirmed) => Future successful Conflict
-        case optUsr =>
+        case optUsr                                 =>
           val loginInfo = LoginInfo(CredentialsProvider.ID, data.email)
           val ev = CredentialsProvider.ID -> data.email
           val mail = Some(Mail(data.email, confirmed = false))
@@ -80,7 +96,7 @@ class AuthController(
             User(name = data.name, email = mail, logins = Map(ev))
           for {
             _ <- userDao save user
-            _ <- authInfoRepository save(loginInfo, passwordHasher hash data.password._1)
+            _ <- authInfoRepository save(loginInfo, passwordHasher hash data.password.password1)
             token = UserToken(userId = user._id, email = data.email, signUp = true)
             _ <- tokenDao save token
             _ <- mailer welcome(user.name, data.email, conf.signupUrl + token._id)
@@ -91,6 +107,7 @@ class AuthController(
 
   def signUpConfirm(tokenId: String): Action[AnyContent] = Action async { implicit request =>
     tokenDao find tokenId flatMap {
+      case None                        => Future successful NotFound
       case Some(token) if token.signUp =>
         tokenDao remove token._id
         if (!token.isExpired) for {
@@ -100,10 +117,26 @@ class AuthController(
           _ <- userDao save optUsr.get.copy(email = Some(Mail(token.email, confirmed = true)))
           result <- authService embed(value, Ok)
         } yield result else Future successful Gone
-      case _ => Future successful NotFound
     }
   }
 
+  @ApiOperation(
+    value = "Player login form",
+    code = 202,
+    responseHeaders = Array(new io.swagger.annotations.ResponseHeader(
+      name = "X-Auth-Token",
+      response = classOf[String])))
+  @ApiImplicitParams(Array(new ApiImplicitParam(
+    name = "body",
+    value = "Login credentials",
+    required = true,
+    dataType = "controllers.SignIn",
+    paramType = "body")))
+  @ApiResponses(value = Array(
+    new ApiResponse(code = 400, message = "Invalid signup data"),
+    new ApiResponse(code = 401, message = "Email not confirmed"),
+    new ApiResponse(code = 403, message = "Password invalid"),
+    new ApiResponse(code = 404, message = "Player not found")))
   def signIn(): Action[AnyContent] = Action async { implicit request =>
     (signInForm bindFromRequest) fold(
       success = data => (for {
@@ -115,7 +148,7 @@ class AuthController(
         result <- if (optUser.get.email.exists(_.confirmed)) authService embed(value, Accepted)
         else Future successful Unauthorized
       } yield result) recover {
-        case _: InvalidPasswordException => Forbidden
+        case _: InvalidPasswordException  => Forbidden
         case _: IdentityNotFoundException => NotFound
       },
       hasErrors = handleFormErrors)
@@ -131,9 +164,9 @@ class AuthController(
             profile <- provider retrieveProfile authInfo map (_.asInstanceOf[CommonSocialProfile])
             result <- userDao retrieve profile.loginInfo flatMap {
               case Some(_) => Future successful Ok
-              case _ => profile.email map userDao.byMail getOrElse Future.successful(None) flatMap {
+              case _       => profile.email map userDao.byMail getOrElse Future.successful(None) flatMap {
                 case Some(u) if u.logins isDefinedAt profile.loginInfo.providerID => Future successful Conflict
-                case optSameEml => for {
+                case optSameEml                                                   => for {
                   _ <- userDao save (optSameEml map { u =>
                     u.copy(logins = u.logins + (profile.loginInfo.providerID -> profile.loginInfo.providerKey))
                   } getOrElse User(
@@ -167,7 +200,7 @@ class AuthController(
             _ <- tokenDao save token
             _ <- mailer resetPassword(email, conf.resetUrl + token._id)
           } yield if (conf.mailMock) Accepted(token._id) else Accepted
-        case _ => Future successful NotFound
+        case _          => Future successful NotFound
       },
       hasErrors = handleFormErrors)
   }
@@ -186,7 +219,7 @@ class AuthController(
               result <- authService embed(value, Accepted)
             } yield result
           } else Future successful Gone
-        case _ => Future successful NotFound
+        case _                            => Future successful NotFound
       },
       hasErrors = handleFormErrors)
   }

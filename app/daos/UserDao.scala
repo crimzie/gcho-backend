@@ -22,8 +22,8 @@ trait UserDao extends IdentityService[User] {
 class MongoUserDao(override val mongo: Future[DefaultDB])(implicit val ec: ExecutionContext)
   extends UserDao with BSONMongoDao {
   scribe debug "Instantiating."
-  override val colName = "players"
-  implicit val authBsonHandler: BSONDocumentHandler[Auth] = Macros.handler[Auth]
+  override val colName                                                           = "players"
+  implicit val authBsonHandler     : BSONDocumentHandler[Auth]                   = Macros.handler[Auth]
   implicit val loginsMapBsonHandler: BSONHandler[BSONArray, Map[String, String]] =
     BSONHandler[BSONArray, Map[String, String]](
       read = arr => arr.values.map { jv =>
@@ -31,13 +31,14 @@ class MongoUserDao(override val mongo: Future[DefaultDB])(implicit val ec: Execu
         auth.id -> auth.key
       }(collection.breakOut),
       write = map => BSONArray(map.map { case (id, key) => authBsonHandler write Auth(id, key) }))
-  implicit val mailHandler: BSONDocumentHandler[Mail] = Macros.handler[Mail]
-  implicit val userHandler: BSONDocumentHandler[User] = Macros.handler[User]
-  val ID: String = NameOf.nameOf[User](_._id)
+  implicit val mailHandler         : BSONDocumentHandler[Mail]                   = Macros.handler[Mail]
+  implicit val userHandler         : BSONDocumentHandler[User]                   = Macros.handler[User]
+
+  val ID  : String = NameOf.nameOf[User](_._id)
   val LGNS: String = NameOf.nameOf[User](_.logins)
-  val PID: String = NameOf.nameOf[Auth](_.id)
-  val KEY: String = NameOf.nameOf[Auth](_.key)
-  val EML: String = NameOf.nameOf[User](_.email)
+  val PID : String = NameOf.nameOf[Auth](_.id)
+  val KEY : String = NameOf.nameOf[Auth](_.key)
+  val EML : String = NameOf.nameOf[User](_.email)
   val ADRS: String = NameOf.nameOf[Mail](_.address)
 
   storage map (_.indexesManager ensure

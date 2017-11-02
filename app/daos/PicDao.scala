@@ -19,7 +19,7 @@ class MongoPicDao(override val mongo: Future[DefaultDB])(implicit val ec: Execut
   scribe debug "Instantiating."
   override val colName: String = "pics"
   val PIC = "pic"
-  val ID = "_id"
+  val ID  = "_id"
 
   override def save(id: String, pic: Array[Byte]): Future[Unit] = for {
     c <- storage

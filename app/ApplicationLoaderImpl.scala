@@ -24,8 +24,8 @@ import play.api.libs.mailer.SMTPMailer
 import play.api.libs.ws.ahc.AhcWSComponents
 import play.api.mvc.{BodyParsers, EssentialFilter}
 import play.api.routing.Router
+import play.modules.swagger.SwaggerPluginImpl
 import reactivemongo.api.{DefaultDB, MongoConnection, MongoDriver}
-import router.Routes
 import services.Mailer
 
 import scala.concurrent.Future
@@ -47,7 +47,7 @@ class Components(context: ApplicationLoader.Context)
 //  scribe.Logger.root.addHandler(LogHandler(level = scribe.Level.Debug))
   scribe info "Reading application mode."
   val conf: Conf = context.environment.mode match {
-    case Dev =>
+    case Dev  =>
       scribe info "Using dev configuration."
       Conf.devConf
     case Test =>
@@ -59,27 +59,27 @@ class Components(context: ApplicationLoader.Context)
   }
 
   scribe info "Connecting to MongoDB."
-  // TODO: handle failed connection:
+  // TODO: handle failed connection
   private val db: Future[DefaultDB] =
     MongoDriver() connection (MongoConnection parseURI conf.mongoHostPort get) database conf.dbName
 
-  private val userDao: UserDao = new MongoUserDao(db)
-  private val passwordInfoDao: PasswordInfoDao = new MongoPasswordInfoDao(db)
-  private val oAuth2InfoDao: OAuth2InfoDao = new MongoOAuth2InfoDao(db)
-  private val userTokenDao: UserTokenDao = new MongoUserTokenDao(db)
+  private val userDao           : UserDao            = new MongoUserDao(db)
+  private val passwordInfoDao   : PasswordInfoDao    = new MongoPasswordInfoDao(db)
+  private val oAuth2InfoDao     : OAuth2InfoDao      = new MongoOAuth2InfoDao(db)
+  private val userTokenDao      : UserTokenDao       = new MongoUserTokenDao(db)
   private val charlistFeatureDao: CharlistFeatureDao = new MongoCharlistFeatureDao(db)
-  private val charlistDao: CharlistDao = new MongoCharlistDao(db)
-  private val picDao: PicDao = new MongoPicDao(db)
+  private val charlistDao       : CharlistDao        = new MongoCharlistDao(db)
+  private val picDao            : PicDao             = new MongoPicDao(db)
 
-  private val bodyParsers = new BodyParsers.Default
-  private val hTTPLayer = new PlayHTTPLayer(wsClient)
-  private val iDGenerator = new SecureRandomIDGenerator
-  private val signer = new JcaSigner(conf.jcaSignerSettings)
-  private val socialStateHandler =
+  private val bodyParsers                    = new BodyParsers.Default
+  private val hTTPLayer                      = new PlayHTTPLayer(wsClient)
+  private val iDGenerator                    = new SecureRandomIDGenerator
+  private val signer                         = new JcaSigner(conf.jcaSignerSettings)
+  private val socialStateHandler             =
     new DefaultSocialStateHandler(Set(new CsrfStateItemHandler(conf.csrfStateSettings, iDGenerator, signer)), signer)
-  private val authInfoRepository = new DelegableAuthInfoRepository(passwordInfoDao, oAuth2InfoDao)
+  private val authInfoRepository             = new DelegableAuthInfoRepository(passwordInfoDao, oAuth2InfoDao)
   private val passwordHasher: PasswordHasher = new BCryptPasswordHasher
-  private val silhouetteProvider = new SilhouetteProvider[JWTEnv](
+  private val silhouetteProvider             = new SilhouetteProvider[JWTEnv](
     silhouette.api.Environment[JWTEnv](
       userDao,
       new JWTAuthenticatorService(conf.jwtAuthConf, None, new Base64AuthenticatorEncoder, iDGenerator, Clock()),
@@ -92,9 +92,9 @@ class Components(context: ApplicationLoader.Context)
       new DefaultUnsecuredRequestHandler(new DefaultUnsecuredErrorHandler(messagesApi)),
       bodyParsers),
     new DefaultUserAwareAction(new DefaultUserAwareRequestHandler(), bodyParsers))
+  private val mailer        : Mailer         = new Mailer(conf.mailerConf, new SMTPMailer(conf.smtpConf), messagesApi)
 
-  private val mailer: Mailer = new Mailer(conf.mailerConf, new SMTPMailer(conf.smtpConf), messagesApi)
-  private val authController = new AuthController(
+  private val authController                                       = new AuthController(
     controllerComponents,
     silhouetteProvider,
     SocialProviderRegistry(new FacebookProvider(hTTPLayer, socialStateHandler, conf.facebookConf) ::
@@ -109,20 +109,26 @@ class Components(context: ApplicationLoader.Context)
     mailer)
   private val charlistFeatureController: CharlistFeatureController =
     new CharlistFeatureController(controllerComponents, silhouetteProvider, charlistFeatureDao)
-  private val charlistController = new CharlistController(controllerComponents, silhouetteProvider, charlistDao, picDao)
-  private val miscController: MiscController = new MiscController(
+  private val charlistController                                   =
+    new CharlistController(controllerComponents, silhouetteProvider, charlistDao, picDao)
+  private val miscController           : MiscController            = new MiscController(
     controllerComponents,
     new DefaultSyncCacheApi(new EhCacheApi(new Cache(conf.cacheConf))),
     router = router)
+  private val apiController                                        =
+    new ApiHelpController(controllerComponents, Configuration load environment)
 
-  override lazy val router: Router = new Routes(
-    httpErrorHandler,
+  override lazy val router: Router = new RouterImpl(
     authController,
-    charlistFeatureController,
     charlistController,
+    charlistFeatureController,
     miscController,
+    apiController,
+    new Default,
     assets)
 
   // TODO: add configuration for prod CORS filter:
   override lazy val httpFilters: Seq[EssentialFilter] = new NoriginFilter :: Nil
+
+  new SwaggerPluginImpl(applicationLifecycle, router, application)
 }

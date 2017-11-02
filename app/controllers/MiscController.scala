@@ -8,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
 class MiscController(components: ControllerComponents, cacheApi: SyncCacheApi, router: => Router)
-                    (implicit ec: ExecutionContext) extends AbstractController(components) {
+  (implicit ec: ExecutionContext) extends AbstractController(components) {
   scribe debug "Instantiating."
   val methods: List[String] = "GET" :: "POST" :: "PUT" :: "DELETE" :: "PATCH" :: Nil
 

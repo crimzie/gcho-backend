@@ -1,12 +1,13 @@
 package services
 package defaults
 
-import models.charlist.Charlist.flaggedWeaponFormat
-import models.charlist.DamageType._
-import models.charlist._
-import play.api.libs.json.{JsObject, Json}
+import models.charlist.FeatureEntry
+import models.charlist.weapon.DamageType._
+import models.charlist.weapon._
+import play.api.libs.json.JsObject
 
 import scala.language.postfixOps
+import scala.util.Try
 import scala.util.matching.Regex
 import scala.xml.{Node, XML}
 
@@ -38,14 +39,14 @@ object DefaultWeapons {
     val skl: Node => String = _ \ "default" collectFirst {
       case n: Node if !((n \ "name").text startsWith "!") && (n \ "modifier").text.asInt == 0 => (n \ "name").text
     } getOrElse ""
-    val spc: Node => String = _ \ "default" collectFirst {
+    val spc: Node => Option[String] = _ \ "default" collectFirst {
       case n: Node if !((n \ "name").text startsWith "!") && (n \ "modifier").text.asInt == 0 =>
         (n \ "specialization").text
-    } getOrElse ""
+    }
     for {
       wpn <- (XML load (getClass getResourceAsStream filePath)) \ "equipment" toStream;
       if (wpn \ "melee_weapon").nonEmpty || (wpn \ "ranged_weapon").nonEmpty
-    } yield Json toJsObject FlaggedWeapon(
+    } yield FeatureEntry.format writes FeatureEntry(
       data = Weapon(
         name = (wpn \ "description").text,
         attacksMelee = for {a <- wpn \ "melee_weapon"} yield {
@@ -56,9 +57,9 @@ object DefaultWeapons {
             name = (a \ "usage").text,
             damage = MeleeDamage(// TODO: grips
               attackType = (a \ "damage").text match {
-                case x if x startsWith "thr" => AttackType.THRUSTING
-                case x if x startsWith "sw" => AttackType.SWINGING
-                case _ => AttackType.WEAPON
+                case x if x startsWith "thr" => Some(AttackType.THRUSTING)
+                case x if x startsWith "sw"  => Some(AttackType.SWINGING)
+                case _                       => None
               },
               dmgDice = dice.asInt,
               dmgMod = mod.asInt,
@@ -67,9 +68,15 @@ object DefaultWeapons {
             skill = skl(a),
             spc = spc(a),
             parry = par.asInt,
-            parryType = parT,
-            st = str.asInt,
-            hands = hnd,
+            parryType = parT match {
+              case "" => None
+              case x  => Option(x)
+            },
+            st = Try(str.toInt).toOption,
+            hands = hnd match {
+              case "" => None
+              case x  => Option(x)
+            },
             reach = (a \ "reach").text)
         },
         attacksRanged = for {a <- wpn \ "ranged_weapon"} yield {
@@ -79,6 +86,7 @@ object DefaultWeapons {
           val rofRgx(rf, mlt, fa) = (a \ "rate_of_fire").text
           val shotsRgx(sh, rld) = (a \ "shots").text
           RangedAttack(
+            name = "Ranged Attack",
             damage = RangedDamage(
               dmgDice = dice.asInt,
               diceMult = mult.asInt,
@@ -88,13 +96,15 @@ object DefaultWeapons {
               dmgType = dType(typ)),
             skill = skl(a),
             spc = spc(a),
-            st = str.asInt,
-            hands = hnd,
-            jet = (a \ "rate_of_fire").text == "Jet",
+            st = Try(str.toInt).toOption,
+            hands = hnd match {
+              case "" => None
+              case x  => Option(x)
+            },
             acc = ac.asInt,
             accMod = acm.asInt,
             rng = (a \ "range").text,
-            rof = RangedRoF(rf.asInt, mlt.asInt, fa == "!"),
+            rof = RangedRoF(rf.asInt, mlt.asInt, fa == "!", (a \ "rate_of_fire").text == "Jet"),
             rcl = (a \ "recoil").text.asInt,
             shots = RangedShots(sh.asInt, rld, sh.asInt)) // TODO: WPS, CPS, malf
         },

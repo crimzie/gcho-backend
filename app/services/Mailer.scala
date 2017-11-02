@@ -15,10 +15,10 @@ class Mailer(conf: MailerConf, val client: MailerClient, messagesApi: MessagesAp
   lazy implicit val messages: Messages = messagesApi preferred Lang(Locale.ENGLISH) :: Nil
 
   def sendEmail(
-                 recipient: String,
-                 subject: String,
-                 bodyHtml: Option[String],
-                 bodyText: Option[String]): Future[Unit] = Future {
+      recipient: String,
+      subject: String,
+      bodyHtml: Option[String],
+      bodyText: Option[String]): Future[Unit] = Future {
     client send Email(
       subject = subject,
       from = conf.from,

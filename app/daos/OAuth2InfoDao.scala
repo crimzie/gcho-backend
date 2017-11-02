@@ -13,8 +13,8 @@ trait OAuth2InfoDao extends DelegableAuthInfoDAO[OAuth2Info]
 class MongoOAuth2InfoDao(override val mongo: Future[DefaultDB])(override implicit val ec: ExecutionContext)
   extends OAuth2InfoDao with BSONMongoDao {
   scribe debug "Instantiating."
-  override val colName: String = "passwords"
-  implicit val loginInfoHandler: BSONDocumentHandler[LoginInfo] = Macros.handler[LoginInfo]
+  override val colName          : String                          = "passwords"
+  implicit val loginInfoHandler : BSONDocumentHandler[LoginInfo]  = Macros.handler[LoginInfo]
   implicit val oauth2InfoHandler: BSONDocumentHandler[OAuth2Info] = Macros.handler[OAuth2Info]
   val LGN = "login"
   val PSW = "paswd"

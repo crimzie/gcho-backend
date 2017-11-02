@@ -1,24 +1,23 @@
 package daos
 
-import models.charlist.FlaggedFeature._
+import com.github.dwickern.macros.NameOf
+import models.charlist.FeatureEntry._
 import models.charlist._
 import play.api.libs.json.JsObject
 import play.api.libs.json.Json.{arr, obj}
-import reactivemongo.api.commands.MultiBulkWriteResult
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.{Ascending, Text}
 import reactivemongo.api.{Cursor, DefaultDB}
-import reactivemongo.play.json.collection.JSONCollection
 import reactivemongo.play.json._
+import reactivemongo.play.json.collection.JSONCollection
 import services.defaults._
 
-import scala.concurrent.duration.{Duration, MINUTES}
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
 trait CharlistFeatureDao {
-  def save(feature: FlaggedFeature[_, _]): Future[Unit]
+  def save(feature: FeatureEntry[Feature]): Future[Unit]
 
   def remove(user: String, id: String): Future[Unit]
 
@@ -30,6 +29,13 @@ trait CharlistFeatureDao {
 class MongoCharlistFeatureDao(mongo: Future[DefaultDB])(implicit ec: ExecutionContext) extends CharlistFeatureDao {
   scribe debug "Instantiating."
   val storage: Future[JSONCollection] = mongo map (_ collection[JSONCollection] "features")
+
+  private val ID           = NameOf.nameOf[FeatureEntry[_]](_._id)
+  private val USER         = NameOf.nameOf[FeatureEntry[_]](_.user)
+  private val CAT          = NameOf.nameOf[FeatureEntry[_]](_.cat)
+  private val NAME         = NameOf.nameOf[Feature](_.str)
+  private val DATA         = NameOf.nameOf[FeatureEntry[_]](_.data)
+  private val DEF_USER_VAL = ""
 
   storage map (_.indexesManager ensure Index(USER -> Ascending :: Nil, name = Some(s"bin-$USER-1")))
   storage map (_.indexesManager ensure Index(CAT -> Ascending :: Nil, name = Some(s"bin-$CAT-1")))
@@ -50,7 +56,7 @@ class MongoCharlistFeatureDao(mongo: Future[DefaultDB])(implicit ec: ExecutionCo
       scribe debug t
   }
 
-  override def save(feature: FlaggedFeature[_, _]): Future[Unit] = for {
+  override def save(feature: FeatureEntry[Feature]): Future[Unit] = for {
     collection <- storage
     _ <- collection.update(obj(USER -> feature.user, ID -> feature._id), feature, upsert = true)
   } yield ()

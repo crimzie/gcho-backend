@@ -1,8 +1,10 @@
 package services
 package defaults
 
-import models.charlist.Charlist.flaggedTraitFormat
-import models.charlist._
+import models.charlist.{Feature, FeatureEntry}
+import models.charlist.`trait`._
+import models.charlist.bonuses._
+import models.charlist.dr.DrSet
 import play.api.libs.json.{JsObject, Json}
 
 import scala.collection.immutable.Seq
@@ -11,39 +13,41 @@ import scala.xml.{Node, XML}
 
 object DefaultTraits {
   private def parseTraitMod(n: Node): (
-    Seq[BonusAttribute],
-      Seq[BonusSkill],
-      Seq[BonusDamage],
-      Seq[BonusDR],
-      Seq[BonusAttributeCost],
-      Seq[BonusReaction]) = ( // TODO: weapon parser missing
-    for {b <- n \ "attribute_bonus"} yield BonusAttribute(
+    Seq[AttributeBonus],
+      Seq[SkillBonus],
+      Seq[DamageBonus],
+      Seq[DRBonus],
+      Seq[AttributeCostBonus],
+      Seq[ReactionBonus]) = ( // TODO: weapon parser missing
+    for {b <- n \ "attribute_bonus"} yield AttributeBonus(
       attr = (b \ "attribute").text,
       bonus = (b \ "amount").text.asDbl,
       perLvl = (b \ "amount" \ "@per_level").text == "yes"),
-    for {b <- n \ "skill_bonus"} yield BonusSkill(
+    for {b <- n \ "skill_bonus"} yield SkillBonus(
       skill = (b \ "name").text,
       skillCompare = (b \ "name" \ "@compare").text,
-      spc = (b \ "specialization").text,
-      spcCompare = (b \ "specialization" \ "@compare").text,
+      spc = (b \ "specialization").headOption map (_.text),
+      spcCompare = (b \ "specialization" \ "@compare").headOption map (_.text),
       perLvl = (b \ "amount" \ "@per_level").text == "yes",
       bonus = (b \ "amount").text.asInt),
-    for {b <- n \ "weapon_bonus"} yield BonusDamage(
+    for {b <- n \ "weapon_bonus"} yield DamageBonus(
       skill = (b \ "name").text,
       skillCompare = (b \ "name" \ "@compare").text,
-      spc = (b \ "specialization").text,
-      spcCompare = (b \ "specialization" \ "@compare").text,
-      relSkill = (b \ "level").text.asInt,
-      perDie = (b \ "amount" \ "@per_die").text == "yes",
-      bonus = (b \ "amount").text.asInt),
-    for (b <- n \ "dr_bonus") yield BonusDR(
+      spc = (b \ "specialization").headOption map (_.text),
+      spcCompare = (b \ "specialization" \ "@compare").headOption map (_.text),
+      minRelSkill = (b \ "level").headOption map (_.text.toInt),
+      perDie = (b \ "amount" \ "@per_die").headOption flatMap { n =>
+        if (n.text == "yes") (b \ "amount").headOption map (_.text) withFilter (_.nonEmpty) map (_.asInt) else None
+      },
+      minBonus = (b \ "amount").text.asInt),
+    for (b <- n \ "dr_bonus") yield DRBonus(
       locations = Seq((b \ "location").text),
       perLvl = (b \ "amount" \ "@per_level").text == "yes",
       protection = DrSet((b \ "amount").text.asInt)),
-    for (b <- n \ "cost_reduction") yield BonusAttributeCost(
+    for (b <- n \ "cost_reduction") yield AttributeCostBonus(
       attr = (b \ "attribute").text,
       cost = (b \ "percentage").text.asInt),
-    for (b <- n \ "reaction_bonus") yield BonusReaction(
+    for (b <- n \ "reaction_bonus") yield ReactionBonus(
       affected = (b \ "affected").text,
       reputation = (b \ "affected" \ "@reputation").text == "yes",
       perLvl = (b \ "amount" \ "@per_level").text == "yes",
@@ -55,7 +59,7 @@ object DefaultTraits {
     val modifier = TraitModifier(
       on = false,
       cat = TraitModifierCategory.VARIANT,
-      variants = "CR",
+      variants = Some("CR"),
       name = "CR 6",
       ref = "BS121",
       costType = TraitModifierCostType.MULTIPLIER,
@@ -70,6 +74,7 @@ object DefaultTraits {
         val (atrBns, sklBns, dmgBns, drBns, atrCMd, rctBns) = parseTraitMod(adv)
         if ((atrBns :: sklBns :: dmgBns :: drBns :: atrCMd :: rctBns :: Nil) forall (_.isEmpty)) Nil
         else TraitModifier(
+          name = "Base",
           cat = TraitModifierCategory.DEFAULT,
           attrBonuses = atrBns,
           skillBonuses = sklBns,
@@ -83,11 +88,11 @@ object DefaultTraits {
         TraitModifier(
           on = false,
           cat = if ((mod \ "variant").isEmpty) "" else TraitModifierCategory.VARIANT,
-          variants = (mod \ "variant").text,
+          variants = (mod \ "variant").headOption map (_.text),
           name = (mod \ "name").text,
           ref = (mod \ "reference").text,
           notes = (mod \ "notes").text,
-          level = (mod \ "levels").text.asInt,
+          level = math.max((mod \ "levels").text.asInt, 1),
           attrBonuses = atrBns,
           skillBonuses = sklBns,
           dmgBonuses = dmgBns,
@@ -98,25 +103,25 @@ object DefaultTraits {
           cost = (mod \ "cost").text.asDbl,
           reactBonuses = rctBns)
       }
-      val ft = FlaggedTrait(
+      val ft: FeatureEntry[Feature] = FeatureEntry(
         data = Trait(
           name = (adv \ "name").text,
           types = (adv \ "type").text split ", " flatMap (_ split "/"),
           category = adv \ "categories" \ "category" map (_.text) match {
-            case x if x contains "Advantage" => "Advantage"
+            case x if x contains "Advantage"    => "Advantage"
             case x if x contains "Disadvantage" => "Disadvantage"
-            case x => x.headOption getOrElse ""
+            case x                              => x.headOption getOrElse ""
           }, // TODO: duplicate ambiguous traits
           switch = (adv \ "name" \ "@switchability").text,
           ref = (adv \ "reference").text,
           notes = (adv \ "notes").text,
           active = false,
           cpBase = (adv \ "base_points").text.asInt,
-          level = (adv \ "levels").text.asInt,
-          cpPerLvl = (adv \ "points_per_level").text.asInt,
+          level = (adv \ "levels").headOption map (_.text.asInt),
+          cpPerLvl = (adv \ "points_per_level").headOption map (_.text) withFilter (_.nonEmpty) map (_.asInt),
           modifiers = defMod ++ ((adv \ "cr") flatMap { _ => variants }) ++ modifiers),
         ready = (adv \ "cr").isEmpty && (adv \ "modifier").isEmpty && !(adv.toString contains '@'))
-      Json toJsObject ft
+      FeatureEntry.format writes ft
     }
   }
 }

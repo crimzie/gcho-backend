@@ -13,8 +13,8 @@ trait PasswordInfoDao extends DelegableAuthInfoDAO[PasswordInfo]
 class MongoPasswordInfoDao(override val mongo: Future[DefaultDB])(override implicit val ec: ExecutionContext)
   extends PasswordInfoDao with BSONMongoDao {
   scribe debug "Instantiating."
-  override val colName: String = "passwords"
-  implicit val loginInfoHandler: BSONDocumentHandler[LoginInfo] = Macros.handler[LoginInfo]
+  override val colName            : String                            = "passwords"
+  implicit val loginInfoHandler   : BSONDocumentHandler[LoginInfo]    = Macros.handler[LoginInfo]
   implicit val passwordInfoHandler: BSONDocumentHandler[PasswordInfo] = Macros.handler[PasswordInfo]
   val LGN = "login"
   val PSW = "paswd"

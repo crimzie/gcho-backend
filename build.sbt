@@ -1,8 +1,9 @@
 name := """gcho-backend"""
-version := "0.2"
-scalaVersion := "2.12.3"
+version := "0.3.5"
+scalaVersion := "2.12.4"
+
 fork in run := true
-logLevel := sbt.Level.Info
+logLevel := Level.Info
 
 lazy val root = project in file(".") enablePlugins PlayScala
 
@@ -19,6 +20,8 @@ libraryDependencies ++= Seq(
   "com.iheart" %% "ficus" % "1.4.0",
   "org.reactivemongo" %% "reactivemongo" % "0.12.6",
   "org.reactivemongo" %% "reactivemongo-play-json" % "0.12.6-play26",
+  "io.swagger" %% "swagger-play2" % "1.6.0",
+  "org.webjars" %% "webjars-play" % "2.6.2",
   "org.webjars" % "swagger-ui" % "3.1.7",
   "org.scalaz" %% "scalaz-core" % "7.2.15",
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.1" % "test",

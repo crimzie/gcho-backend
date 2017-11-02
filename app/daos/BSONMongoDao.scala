@@ -8,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait BSONMongoDao {
   implicit val ec: ExecutionContext
-  val mongo: Future[DefaultDB]
+  val mongo  : Future[DefaultDB]
   val colName: String
   lazy val storage: Future[BSONCollection] = mongo map (_ collection[BSONCollection] colName)
   val d: BSONDocument = BSONDocument.empty

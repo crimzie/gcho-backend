@@ -18,7 +18,7 @@ trait UserTokenDao {
 class MongoUserTokenDao(override val mongo: Future[DefaultDB])(implicit val ec: ExecutionContext)
   extends UserTokenDao with BSONMongoDao {
   scribe debug "Instantiating."
-  override val colName = "usertokens"
+  override val colName                                          = "usertokens"
   implicit val userTokenHandler: BSONDocumentHandler[UserToken] = Macros.handler[UserToken]
   val ID: String = NameOf.nameOf[UserToken](_._id)
 
