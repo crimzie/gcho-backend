@@ -1,5 +1,5 @@
 # Routes
-# This file is not used and is left purely for swagger spec generation
+# This file is not used by application and is left in place purely for swagger spec generation
 # ~~~~
 # User authentication
 POST           /api/auth/signup                  controllers.AuthController.signUp
@@ -11,10 +11,10 @@ POST           /api/auth/reset                   controllers.AuthController.rese
 POST           /api/auth/reset/:token            controllers.AuthController.resetPasswordConfirm(token: String)
 POST           /api/auth/change                  controllers.AuthController.changePassword
 # Features storage
-GET            /api/features                     controllers.CharlistFeatureController.lookup(col: Seq[String], term: Option[String] = None)
 POST           /api/features                     controllers.CharlistFeatureController.add()
-GET            /api/features/search              controllers.CharlistFeatureController.lookup(col: Seq[String], term: Option[String] = None)
-GET            /api/features/new/:col            controllers.CharlistFeatureController.create(col)
+GET            /api/features/search              controllers.CharlistFeatureController.search(col: Seq[String], term: Option[String] = None)
+GET            /api/features/:col/new            controllers.CharlistFeatureController.create(col)
+GET            /api/features/:col/               controllers.CharlistFeatureController.lookup(col: String, term: Option[String] = None)
 GET            /api/features/:id                 controllers.CharlistFeatureController.get(id: String)
 # Charlist storage
 GET            /api/characters                   controllers.CharlistController.list

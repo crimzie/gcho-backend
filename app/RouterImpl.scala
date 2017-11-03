@@ -31,10 +31,10 @@ class RouterImpl(
     case PATCH(p"/api/characters/$id")   => charlistCtr update id
     case DELETE(p"/api/characters/$id")  => charlistCtr delete id
 
-    case GET(p"/api/features/$col" & q_?"term=$term")                    => clFeatureCtr lookup(col :: Nil, term)
     case POST(p"/api/features/")                                         => clFeatureCtr add()
-    case GET(p"/api/features/search" ? q_*"col=$cols" & q_?"term=$term") => clFeatureCtr lookup(cols, term)
-    case GET(p"/api/features/new/$col")                                  => clFeatureCtr create col
+    case GET(p"/api/features/search" ? q_*"col=$cols" & q_?"term=$term") => clFeatureCtr search(cols, term)
+    case GET(p"/api/features/$col/new")                                  => clFeatureCtr create col
+    case GET(p"/api/features/$col/" & q_?"term=$term")                   => clFeatureCtr search(col :: Nil, term)
     case GET(p"/api/features/$id")                                       => clFeatureCtr get id
 
     case OPTIONS(p"/api/$url*") => miscCtr options url
