@@ -7,7 +7,7 @@ import models.auth.{Auth, Mail, User}
 import reactivemongo.api.DefaultDB
 import reactivemongo.api.indexes.Index
 import reactivemongo.api.indexes.IndexType.Ascending
-import reactivemongo.bson.{BSONArray, BSONDocument, BSONDocumentHandler, BSONHandler, Macros}
+import reactivemongo.bson._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,24 +22,21 @@ trait UserDao extends IdentityService[User] {
 class MongoUserDao(override val mongo: Future[DefaultDB])(implicit val ec: ExecutionContext)
   extends UserDao with BSONMongoDao {
   scribe debug "Instantiating."
-  override val colName                                                           = "players"
-  implicit val authBsonHandler     : BSONDocumentHandler[Auth]                   = Macros.handler[Auth]
-  implicit val loginsMapBsonHandler: BSONHandler[BSONArray, Map[String, String]] =
-    BSONHandler[BSONArray, Map[String, String]](
-      read = arr => arr.values.map { jv =>
-        val auth = jv.asInstanceOf[BSONDocument].as[Auth]
-        auth.id -> auth.key
-      }(collection.breakOut),
-      write = map => BSONArray(map.map { case (id, key) => authBsonHandler write Auth(id, key) }))
-  implicit val mailHandler         : BSONDocumentHandler[Mail]                   = Macros.handler[Mail]
-  implicit val userHandler         : BSONDocumentHandler[User]                   = Macros.handler[User]
+  override val colName = "players"
 
   val ID  : String = NameOf.nameOf[User](_._id)
+  val NAME: String = NameOf.nameOf[User](_.name)
   val LGNS: String = NameOf.nameOf[User](_.logins)
   val PID : String = NameOf.nameOf[Auth](_.id)
   val KEY : String = NameOf.nameOf[Auth](_.key)
   val EML : String = NameOf.nameOf[User](_.email)
   val ADRS: String = NameOf.nameOf[Mail](_.address)
+
+  implicit val mapHandler : BSONDocumentHandler[Map[String, String]] = BSONDocumentHandler[Map[String, String]](
+    read = _.elements.map { e => e.name -> e.value.asInstanceOf[BSONString].value }(collection.breakOut),
+    write = m => BSONDocument apply m.map { t => BSONElement(t._1, BSONString(t._2)) })
+  implicit val mailHandler: BSONDocumentHandler[Mail]                = Macros.handler[Mail]
+  implicit val userHandler: BSONDocumentHandler[User]                = Macros.handler[User]
 
   storage map (_.indexesManager ensure
     Index(s"$EML.$ADRS" -> Ascending :: Nil, Some(s"bin-$EML.$ADRS-1"), unique = true))
@@ -65,7 +62,7 @@ class MongoUserDao(override val mongo: Future[DefaultDB])(implicit val ec: Execu
 
   override def retrieve(loginInfo: LoginInfo): Future[Option[User]] = for {
     c <- storage
-    sel = d :~ LGNS -> (d :~ "$elemMatch" -> (d :~ PID -> loginInfo.providerID :~ KEY -> loginInfo.providerKey))
+    sel = d :~ s"$LGNS.${loginInfo.providerID}" -> loginInfo.providerKey
     u <- c.find(sel).one[User]
   } yield u
 }

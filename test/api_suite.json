@@ -28,7 +28,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"email\": \"string@string\",\n  \"password\": {\n    \"password1\": \"string\",\n    \"password2\": \"string\"\n  },\n  \"name\": \"string\"\n}"
+					"raw": "{\n  \"email\": \"string@string\",\n  \"password\": \"string\",\n   \"name\": \"string\"\n}"
 				},
 				"url": {
 					"raw": "http://0.0.0.0:9000/api/auth/signup",
@@ -47,7 +47,7 @@
 			"response": []
 		},
 		{
-			"name": "http://0.0.0.0:9000/api/auth/signup/tdLU18GC70gW",
+			"name": "http://0.0.0.0:9000/api/auth/signup/{token}",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -77,8 +77,8 @@
 					"script": {
 						"type": "text/javascript",
 						"exec": [
-							"pm.test(\"Status code is 202\", function () {",
-							"    pm.response.to.have.status(202);",
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
 							"});",
 							"pm.globals.set(\"X-Auth-Token\", responseHeaders[\"X-Auth-Token\"]);"
 						]
@@ -162,7 +162,8 @@
 						"exec": [
 							"pm.test(\"Status code is 202\", function () {",
 							"    pm.response.to.have.status(202);",
-							"});"
+							"});",
+							"pm.globals.set(\"reset-token\", pm.response.text());"
 						]
 					}
 				}
@@ -200,7 +201,7 @@
 			"response": []
 		},
 		{
-			"name": "http://0.0.0.0:9000/api/auth/reset/VLH61oFAWGTe",
+			"name": "http://0.0.0.0:9000/api/auth/reset/{token}",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -211,10 +212,10 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"password1\": \"string\",\n\t\"password2\": \"string\"\n}"
+					"raw": "{\"password\": \"string\"}"
 				},
 				"url": {
-					"raw": "http://0.0.0.0:9000/api/auth/reset/dBVw6pu1OIeV",
+					"raw": "http://0.0.0.0:9000/api/auth/reset/{{reset-token}}",
 					"protocol": "http",
 					"host": [
 						"0.0.0.0"
@@ -224,7 +225,7 @@
 						"api",
 						"auth",
 						"reset",
-						"dBVw6pu1OIeV"
+						"{{reset-token}}"
 					]
 				}
 			},
@@ -238,8 +239,8 @@
 					"script": {
 						"type": "text/javascript",
 						"exec": [
-							"pm.test(\"Status code is 202\", function () {",
-							"    pm.response.to.have.status(202);",
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
 							"});"
 						]
 					}
@@ -619,8 +620,8 @@
 					"script": {
 						"type": "text/javascript",
 						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
+							"pm.test(\"Status code is 204\", function () {",
+							"    pm.response.to.have.status(204);",
 							"});"
 						]
 					}

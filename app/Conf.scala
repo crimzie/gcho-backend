@@ -13,11 +13,11 @@ import scala.language.postfixOps
 import scala.util.Random
 
 object Conf {
-  private val hostname       : String = Option(System getenv "GCHO_HOSTNAME") getOrElse "0.0.0.0:9000"
-  private val redirectPath   : String = Option(System getenv "GCHO_REDIRPATH") getOrElse "/auth"
-  private val confirmPath    : String = Option(System getenv "GCHO_EMAILPATH") getOrElse "/auth"
-  private val baseRedirectUrl: String = s"https://$hostname$redirectPath"
-  private val baseMailUrl             = s"https://$hostname$confirmPath"
+  private val hostname    : String = Option(System getenv "GCHO_HOSTNAME") getOrElse "0.0.0.0:9000"
+  private val redirectPath: String = Option(System getenv "GCHO_REDIRPATH") getOrElse "/auth"
+  private val confirmPath : String = Option(System getenv "GCHO_EMAILPATH") getOrElse "/auth"
+  private val baseRedirectUrl      = s"https://$hostname$redirectPath"
+  private val baseMailUrl          = s"https://$hostname$confirmPath"
 
   val devConf = Conf(
     hostName = hostname,
