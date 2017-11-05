@@ -15,9 +15,9 @@ case class ArmorComponent(
     back: Boolean = true,
     @ApiModelProperty(required = true, allowableValues = "hard,soft,force field,tough skin")
     drType: String = DrType.HARD,
-    @ApiModelProperty(required = true, value = "Can be a subset of: eyes,skull,face,head,neck," +
-      "right leg,left leg,legs,right arm,left arm,arms,chest,vitals,abdomen,groin,torso,hands," +
-      "left hand,right hand,feet,right foot,left foot,skin,full body")
+    @ApiModelProperty(
+      required = true,
+      value = "Can be a subset of: eyes,skull,face,head,neck,right leg,left leg,legs,right arm,left arm,arms,chest,vitals,abdomen,groin,torso,hands,left hand,right hand,feet,right foot,left foot,skin,full body")
     locations: Set[String] = Set(HitLocation.BODY))
 
 object ArmorComponent {

@@ -10,9 +10,7 @@ import play.api.libs.json._
 case class Wound(
     @ApiModelProperty(
       required = true,
-      allowableValues = "eyes,skull,face,head,neck,right leg,left leg,legs,right arm,left arm,arms," +
-        "chest,vitals,abdomen,groin,torso,hands,left hand,right hand,feet,right foot,left foot,skin," +
-        "full body")
+      allowableValues = "eyes,skull,face,head,neck,right leg,left leg,legs,right arm,left arm,arms,chest,vitals,abdomen,groin,torso,hands,left hand,right hand,feet,right foot,left foot,skin,full body")
     location: String = HitLocation.CHEST,
     @ApiModelProperty(
       required = true,
