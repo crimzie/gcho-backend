@@ -2,18 +2,14 @@
 
 ## Scala backend for an online GURPS™ toolkit.
 
-### Setup
-* Install sbt
-* Install newman
-
 ### Running in dev
 * Have MongoDB running on local machine
 * `sbt run`
 * API description with Swagger: [http://127.0.0.1:9000/api](http://127.0.0.1:9000/api)
-* Testing: `newman run test/api_spec.json --ignore-redirects`
+* Testing: `sbt test` and `newman run test/api_spec.json --ignore-redirects`
 
-### Publishing
-* `sbt packageBin` produces a .zip in `target/universal/` with all the jars and binaries.
+### Packaging
+* `sbt universal:packageBin` produces a zip file in `target/universal/` with all the artifacts.
 
 ### Running in production
 * Production configuration accepts several optional environment variables:
