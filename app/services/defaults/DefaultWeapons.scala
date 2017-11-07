@@ -106,7 +106,7 @@ object DefaultWeapons {
             rng = (a \ "range").text,
             rof = RangedRoF(rf.asInt, mlt.asInt, fa == "!", (a \ "rate_of_fire").text == "Jet"),
             rcl = (a \ "recoil").text.asInt,
-            shots = RangedShots(sh.asInt, rld, sh.asInt)) // TODO: WPS, CPS, malf
+            shots = RangedShots(sh.asInt, Option(rld) getOrElse "", sh.asInt)) // TODO: WPS, CPS, malf
         },
         blocks = for (b <- wpn \ "melee_weapon" if (b \ "block").text == "+0") yield BlockDefence(
           name = (b \ "usage").text,

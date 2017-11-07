@@ -12,7 +12,7 @@ import scala.xml.XML
 object DefaultSkills {
   def parse(filePath: String): Stream[JsObject] =
     for {skl <- (XML load (getClass getResourceAsStream filePath)) \ "skill" toStream} yield {
-      val (attr, diff) = (skl \ "difficulty" text) partition (_ != '/')
+      val (attr, diff) = (skl \ "difficulty" text) span (_ != '/')
       val fs: FeatureEntry[Feature] = FeatureEntry(
         data = Skill(
           name = (skl \ "name").text,

@@ -52,8 +52,8 @@ class MongoCharlistFeatureDao(mongo: Future[DefaultDB])(implicit ec: ExecutionCo
   defaultsPreloading onComplete {
     case Success(_) => scribe info "Default features collection loaded to db."
     case Failure(t) =>
-      scribe warn "Failed to load default features collection to db:"
-      scribe debug t
+      scribe error "Failed to load default features collection to db."
+      scribe error t
   }
 
   override def save(feature: FeatureEntry[Feature]): Future[Unit] = for {
